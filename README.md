@@ -168,14 +168,19 @@ GET /apn/5077019011
 4. **Frontend** → Clean presentation with expandable technical details
 
 ### **Live Data Sources**
-- **LA County Parcel Service**: `https://public.gis.lacounty.gov/public/rest/services/LACounty_Cache/LACounty_Parcel/MapServer/0/query`
-  - Property boundaries, lot area calculations
-  - Existing building details (units, square footage, year built)
-  - Assessor data (land value, improvement value)
-  - Use codes and property classifications
+- **ZIMAS (LA City Planning)**: `https://zimas.lacity.org/arcgis/rest/services/zma/zimas/MapServer`
+  - **Primary data source** for comprehensive zoning analysis
+  - Complete zoning designations (R3-1, height districts, overlays)
+  - General plan land use classifications
+  - Council districts and neighborhood councils
+  - TOC tier analysis and transit proximity
+  - All regulatory data displayed in Complete Rules Audit
 
-- **Address Geocoding**: LA County GeocodeServer for address-to-APN conversion
-- **Environmental Hazards**: Methane zones, fault zones, liquefaction risk from County GIS layers
+- **LA County Parcel Service**: `https://public.gis.lacounty.gov/public/rest/services/LACounty_Cache/LACounty_Parcel/MapServer/0/query`
+  - Address-to-APN conversion and geocoding
+  - Basic property boundaries and lot area calculations  
+  - Existing building details (units, square footage, year built)
+  - Assessor data for RSO eligibility determination
 
 ### **Regulatory Framework Applied**
 
