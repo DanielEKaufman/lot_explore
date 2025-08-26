@@ -48,6 +48,8 @@ class IncentiveOpportunities:
     opportunity_zone: bool = False
     adaptive_reuse: bool = False
     ed1_eligible: bool = False
+    sb9_eligible: bool = False
+    sb9_lot_split_eligible: bool = False
 
 @dataclass
 class Constraints:
@@ -239,6 +241,11 @@ class DevelopmentAnalyzer:
             toc_tier = int(data['toc_tier'])
             toc_description = f"Property is within TOC Tier {toc_tier} area"
         
+        # SB-9 (duplex/lot split) - only for R1 zones
+        lot_area = data.get('lot_area_sqft', 0) or data.get('Shape.STArea()', 0) or 0
+        sb9_eligible = zone == 'R1'
+        sb9_lot_split_eligible = sb9_eligible and lot_area >= 2400  # Min lot size for split
+        
         return IncentiveOpportunities(
             toc_tier=toc_tier,
             toc_distance_description=toc_description,
@@ -246,7 +253,9 @@ class DevelopmentAnalyzer:
             ab2097_eligible=True,  # Would check transit proximity
             opportunity_zone=False,  # Would check OZ designation
             adaptive_reuse=False,   # Would check ARIA designation
-            ed1_eligible=zone.startswith('R')
+            ed1_eligible=zone.startswith('R'),
+            sb9_eligible=sb9_eligible,
+            sb9_lot_split_eligible=sb9_lot_split_eligible
         )
     
     def _analyze_constraints(self, data: Dict, existing: ExistingConditions) -> Constraints:
@@ -361,7 +370,53 @@ class DevelopmentAnalyzer:
                 feasibility=sdb_feasibility
             ))
         
-        # Scenario 4: 100% Affordable (ED-1)
+        # Scenario 4: SB-9 (for R1 zones)
+        if incentives.sb9_eligible:
+            # SB-9 allows duplex on existing lot
+            sb9_duplex_units = 2.0
+            sb9_duplex_total = max(sb9_duplex_units, existing.units)
+            
+            # SB-9 lot split scenario (if eligible)
+            if incentives.sb9_lot_split_eligible:
+                sb9_split_units = 4.0  # 2 units per lot after split
+                sb9_split_total = max(sb9_split_units, existing.units)
+                
+                # Lot split feasibility
+                if existing.units > 1:
+                    split_feasibility = "Medium - Existing multi-unit may complicate lot split process"
+                else:
+                    split_feasibility = "High - Clear ministerial approval pathway for lot split"
+                
+                scenarios.append(DevelopmentScenario(
+                    name="SB-9 Lot Split + Duplex",
+                    description=f"UNLOCK: R1 zone with lot ≥2,400 sq ft. Split lot into two parcels, build duplex on each (4 total units). Ministerial approval required.",
+                    total_units=sb9_split_total,
+                    net_new_units=sb9_split_total - existing.units,
+                    affordability_required="None",
+                    approval_path="Ministerial approval (SB-9, Gov Code 66411.7)",
+                    key_benefits=["No affordability requirement", "Ministerial approval (no discretionary review)", "No parking minimums", "Maximum 4 total units", "Can sell lots separately"],
+                    constraints=["Minimum 1,200 sq ft per lot after split", "Owner-occupancy required for 3 years", "Cannot demolish existing home in some cases"],
+                    feasibility=split_feasibility
+                ))
+            
+            # Basic duplex scenario (no lot split)
+            duplex_feasibility = "High - Simple ministerial conversion to duplex"
+            if existing.units > 1:
+                duplex_feasibility = "Medium - May need to reduce units to comply with duplex limit"
+                
+            scenarios.append(DevelopmentScenario(
+                name="SB-9 Duplex",
+                description=f"UNLOCK: R1 zone allows duplex conversion. Convert single-family home to duplex or build new duplex on existing lot.",
+                total_units=sb9_duplex_total,
+                net_new_units=sb9_duplex_total - existing.units,
+                affordability_required="None",
+                approval_path="Ministerial approval (SB-9, Gov Code 65852.21)",
+                key_benefits=["No affordability requirement", "Ministerial approval", "No parking minimums if near transit", "Preserve neighborhood character"],
+                constraints=["Owner-occupancy required for 3 years", "Cannot exceed duplex (2 units) on single lot"],
+                feasibility=duplex_feasibility
+            ))
+        
+        # Scenario 5: 100% Affordable (ED-1)
         if incentives.ed1_eligible:
             # Assume maximum envelope for 100% affordable
             affordable_units = base.baseline_units * 2.0  # Conservative estimate

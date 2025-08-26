@@ -10,6 +10,7 @@ A professional-grade entitlement analysis platform that transforms complex LA zo
 - **By-Right Development**: Baseline zoning analysis
 - **TOC (Transit Oriented Communities)**: Tier-based density bonuses
 - **State Density Bonus**: Affordable housing incentives
+- **SB-9 (Duplex/Lot Split)**: R1 zone duplex conversion and lot splitting
 - **ED-1 (100% Affordable)**: Maximum development potential
 
 ### 🔓 **Clear Unlock Requirements** 
@@ -161,6 +162,13 @@ Deterministic rules programmed into the analysis engine:
 - 35% density bonus for 11% Very Low Income units
 - Up to 3 regulatory concessions allowed
 - Cannot be denied if application complies
+
+**SB-9 (Housing Opportunity and More Efficiency Act)**:
+- Duplex conversion allowed on single-family lots (R1 zones)
+- Lot splits creating two parcels from one (minimum 1,200 sq ft each)
+- Up to 4 total units possible (2 units per split lot)
+- Ministerial approval (no discretionary review)
+- Owner-occupancy required for 3 years
 
 **SB 330 (Housing Crisis Act)**:
 - Replacement unit requirements for rent-stabilized properties

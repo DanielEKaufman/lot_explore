@@ -269,6 +269,29 @@ async def test_analyzer():
     
     return analysis
 
+@app.get("/test-sb9")
+async def test_sb9():
+    """Test SB-9 scenarios with R1 property"""
+    sample_data = {
+        'apn': '1234-567-890',
+        'address': '123 SINGLE FAMILY ST',
+        'lot_area_sqft': 5000,  # Large enough for lot split
+        'existing_units': 1,
+        'building_sf': 1500,
+        'year_built': '1950',
+        'zone': 'R1',  # Single-family zone eligible for SB-9
+        'height_district': '1',
+        'use_code': '0100',
+        'use_description': 'Single Family Residence',
+        'is_rso': False,
+        'raw_data': {}
+    }
+    
+    analyzer = DevelopmentAnalyzer()
+    analysis = analyzer.analyze_development_potential(sample_data)
+    
+    return analysis
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
