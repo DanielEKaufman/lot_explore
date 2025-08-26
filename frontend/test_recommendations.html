@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Netflix Recommendations</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 20px; 
+            background: #f9fafb;
+        }
+        .recommendations-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 25px;
+            margin-top: 30px;
+        }
+        @media (max-width: 768px) {
+            .recommendations-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .recommendations-container {
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
+        }
+        .rec-card { 
+            background: linear-gradient(135deg, #ffffff 0%, #f8fffe 100%);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 25px 0;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+        .rec-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #10b981, #34d399);
+            border-radius: 20px 20px 0 0;
+        }
+        .units { 
+            font-size: 48px; 
+            font-weight: 800; 
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 15px 0;
+        }
+        .reason { 
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            padding: 18px;
+            border-radius: 12px;
+            border: 1px solid #bae6fd;
+            margin: 15px 0;
+            position: relative;
+        }
+        .math-box {
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            border: 2px solid #10b981;
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .math-content {
+            font-family: 'SF Mono', Monaco, monospace;
+            background: rgba(255,255,255,0.8);
+            padding: 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.7;
+            color: #374151;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏆 Netflix-Style Recommendations Test</h1>
+    <p>Enter a Los Angeles address to see the new recommendations:</p>
+    
+    <input type="text" id="addressInput" placeholder="603 N Windsor Blvd, Los Angeles, CA 90004" style="width: 400px; padding: 10px;">
+    <button onclick="testRecommendations()" style="padding: 10px 20px;">Test Recommendations</button>
+    
+    <div id="results"></div>
+
+    <script>
+        async function testRecommendations() {
+            const address = document.getElementById('addressInput').value || '603 N Windsor Blvd, Los Angeles, CA 90004';
+            const resultsDiv = document.getElementById('results');
+            
+            resultsDiv.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:8000/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address })
+                });
+                
+                const data = await response.json();
+                
+                if (data.development_scenarios) {
+                    const top3 = data.development_scenarios.slice(0, 3);
+                    const badges = ['🥇 BEST', '🥈 ALT', '🥉 FALL'];
+                    
+                    resultsDiv.innerHTML = `
+                        <h2>✅ Beautiful Netflix-Style Recommendations!</h2>
+                        <div class="recommendations-container">
+                        ${top3.map((scenario, i) => `
+                            <div class="rec-card">
+                                <h3 style="color: #1f2937; font-weight: 600; margin-bottom: 10px;">${badges[i]}: ${scenario.name}</h3>
+                                <div class="units">${Math.round(scenario.total_units)} units</div>
+                                <p style="color: #6b7280; margin: 10px 0;">+${Math.round(scenario.net_new_units)} new units from current ${data.existing_conditions.units}</p>
+                                <div class="reason">💡 ${scenario.recommendation_reason}</div>
+                                
+                                <div class="math-box">
+                                    <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                                        <span style="font-size: 24px; margin-right: 12px;">🧮</span>
+                                        <strong style="color: #064e3b; font-size: 17px; font-weight: 600;">How We Calculate ${Math.round(scenario.total_units)} Units</strong>
+                                    </div>
+                                    <div class="math-content">
+                                        ${scenario.unit_calculation_justification || 'Calculation not available'}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                        </div>
+                        <p style="margin-top: 30px;"><strong>Total scenarios analyzed:</strong> ${data.development_scenarios.length}</p>
+                    `;
+                } else {
+                    resultsDiv.innerHTML = '<p>❌ Error: No scenarios in response</p>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<p>❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

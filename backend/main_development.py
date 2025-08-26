@@ -6,6 +6,7 @@ from typing import Optional, Dict, Any, List
 import json
 import re
 from development_analyzer import DevelopmentAnalyzer
+from dataclasses import asdict
 
 app = FastAPI(title="LA Development Potential Analyzer")
 
@@ -17,8 +18,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# LA County GIS endpoints
+# LA County GIS and ZIMAS endpoints
 COUNTY_PARCEL_URL = "https://public.gis.lacounty.gov/public/rest/services/LACounty_Cache/LACounty_Parcel/MapServer/0/query"
+ZIMAS_BASE_URL = "https://zimas.lacity.org/arcgis/rest/services/zma/zimas/MapServer"
 
 class AddressRequest(BaseModel):
     address: str
@@ -118,6 +120,144 @@ async def get_all_parcel_addresses(apn: str) -> List[str]:
     
     return []
 
+async def query_zimas_comprehensive(address: str, lat: float = None, lon: float = None) -> Optional[Dict]:
+    """Query ZIMAS for comprehensive property data"""
+    
+    # Comprehensive layer list for all requested data categories
+    target_layers = [
+        # ZONING & PLANNING
+        "1101",  # Zoning (Chapter 1A) 
+        "1102",  # Zoning
+        "1201",  # General Plan Land Use (Chapter 1A)
+        "1202",  # General Plan Land Use
+        "5",     # Community Plan Areas
+        "103",   # Community Plan Areas (Query layer)
+        "10",    # Area Planning Commission
+        
+        # JURISDICTIONAL & PERMITTING
+        "1600",  # Coastal Zones
+        "1603",  # Dual Permit Jurisdiction Area
+        "1605",  # Coastal Commission Permit Area
+        "1604",  # Single Permit Jurisdiction Area
+        "102",   # Council Districts
+        "101",   # Certified Neighborhood Councils
+        
+        # TRANSIT & HOUSING PROGRAMS
+        "1400",  # Transit Oriented Communities (TOC)
+        "1500",  # AB 2097 Entitlement Areas
+        
+        # ECONOMIC DEVELOPMENT & HOUSING
+        "1",     # Adult Entertainment Points (restrictive zoning)
+        "1300",  # Schools/Parks with 500 Ft. Buffer
+        "1301",  # AdultEntertainment restrictions
+        "1302",  # AdultEntertainment Buffer
+        
+        # PUBLIC SAFETY & RESTRICTIONS
+        "1701",  # Vehicle Dwelling Restrictions
+        "1702",  # Vehicle Dwelling Restrictions
+        "1800",  # Waiver of Dedication or Improvement
+        
+        # ASSESSOR & CASE DATA (through landbase)
+        "105",   # Landbase
+        "104",   # Mapsheets
+        "106"    # DCP_GEOTEAM_PLY
+    ]
+    
+    # Use identify API for point-based queries (more comprehensive)
+    if lat and lon:
+        return await _query_zimas_by_point(lat, lon, target_layers)
+    else:
+        return await _query_zimas_by_address(address, target_layers)
+
+async def _query_zimas_by_point(lat: float, lon: float, layers: list) -> Optional[Dict]:
+    """Query ZIMAS by geographic point"""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        # Convert to LA County coordinate system extent for better results
+        buffer = 0.001  # Small buffer around point
+        extent = f"{lon-buffer},{lat-buffer},{lon+buffer},{lat+buffer}"
+        
+        params = {
+            "f": "json",
+            "tolerance": "10",
+            "imageDisplay": "400,400,96",
+            "mapExtent": extent,
+            "geometry": f"{lon},{lat}",
+            "geometryType": "esriGeometryPoint",
+            "sr": "4326",
+            "layers": f"visible:{','.join(layers)}",
+            "returnGeometry": "false"
+        }
+        
+        try:
+            response = await client.get(f"{ZIMAS_BASE_URL}/identify", params=params)
+            if response.status_code == 200:
+                data = response.json()
+                print(f"ZIMAS response: {len(data.get('results', []))} results found")
+                return _parse_zimas_results(data.get("results", []))
+        except Exception as e:
+            print(f"ZIMAS point query error: {e}")
+    return None
+
+async def _query_zimas_by_address(address: str, layers: list) -> Optional[Dict]:
+    """Query ZIMAS by address (fallback method)"""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        params = {
+            "searchText": address,
+            "layers": ",".join(layers),
+            "sr": "4326",
+            "f": "json"
+        }
+        
+        try:
+            response = await client.get(f"{ZIMAS_BASE_URL}/find", params=params)
+            if response.status_code == 200:
+                data = response.json()
+                print(f"ZIMAS address search: {len(data.get('results', []))} results found")
+                return _parse_zimas_results(data.get("results", []))
+        except Exception as e:
+            print(f"ZIMAS address query error: {e}")
+    return None
+
+def _parse_zimas_results(results: list) -> Dict:
+    """Parse ZIMAS results into organized data structure"""
+    parsed_data = {
+        "zoning": {},
+        "general_plan": {},
+        "jurisdictional": {},
+        "permitting": {},
+        "transit_housing": {},
+        "economic_development": {},
+        "public_safety": {},
+        "assessor_case_data": {},
+        "raw_results": results
+    }
+    
+    for result in results:
+        layer_id = result.get("layerId")
+        layer_name = result.get("layerName", "")
+        attributes = result.get("attributes", {})
+        
+        # Categorize by layer ID
+        if layer_id in [1101, 1102]:  # Zoning
+            parsed_data["zoning"][layer_name] = attributes
+        elif layer_id in [1201, 1202]:  # General Plan
+            parsed_data["general_plan"][layer_name] = attributes
+        elif layer_id in [1603, 1605, 1604, 1600, 102, 101]:  # Jurisdictional
+            parsed_data["jurisdictional"][layer_name] = attributes
+        elif layer_id in [1400, 1500]:  # Transit & Housing Programs
+            parsed_data["transit_housing"][layer_name] = attributes
+        elif layer_id in [1, 1300, 1301, 1302]:  # Economic Development
+            parsed_data["economic_development"][layer_name] = attributes
+        elif layer_id in [1701, 1702, 1800]:  # Public Safety
+            parsed_data["public_safety"][layer_name] = attributes
+        elif layer_id in [105, 104, 106]:  # Assessor/Case Data
+            parsed_data["assessor_case_data"][layer_name] = attributes
+        else:  # General planning layers
+            if layer_id in [5, 103, 10]:
+                parsed_data["general_plan"][layer_name] = attributes
+    
+    return parsed_data
+
 async def geocode_address(address: str) -> Optional[Dict]:
     """Geocode address using LA County services"""
     
@@ -168,12 +308,28 @@ async def geocode_address(address: str) -> Optional[Dict]:
     
     return None
 
-def prepare_property_data(county_result: Dict) -> Dict:
+async def prepare_property_data(county_result: Dict, address: str = "") -> Dict:
     """Prepare property data for development analysis"""
     
     county_data = county_result.get("data", {})
     geometry = county_result.get("geometry", {})
     all_addresses = county_result.get("all_addresses", [])
+    
+    # Query ZIMAS for comprehensive data using coordinates from county data
+    lat = county_data.get("CENTER_LAT") 
+    lon = county_data.get("CENTER_LON")
+    
+    zimas_data = None
+    if lat and lon:
+        # Use precise coordinates for best results
+        zimas_data = await query_zimas_comprehensive(address, float(lat), float(lon))
+        if zimas_data:
+            print(f"Found comprehensive ZIMAS data with {len(zimas_data.get('raw_results', []))} total results")
+    else:
+        # Fallback to address-based query
+        zimas_data = await query_zimas_comprehensive(address or county_data.get("SitusAddress", ""))
+        if zimas_data:
+            print(f"Found ZIMAS data via address search")
     
     # Basic property info
     apn = str(county_data.get("AIN") or county_data.get("APN") or "")
@@ -220,6 +376,7 @@ def prepare_property_data(county_result: Dict) -> Dict:
         'use_code': use_code,
         'use_description': use_desc,
         'is_rso': is_rso,
+        'zimas_data': zimas_data or {},
         'raw_data': county_data
     }
 
@@ -253,13 +410,17 @@ async def analyze_development_potential(request: AddressRequest):
         raise HTTPException(status_code=404, detail=f"No parcel data found for APN: {apn}")
     
     # Prepare data for analysis
-    property_data = prepare_property_data(county_result)
+    property_data = await prepare_property_data(county_result, request.address)
     
     # Run development analysis
     analyzer = DevelopmentAnalyzer()
     analysis = analyzer.analyze_development_potential(property_data)
     
-    return analysis
+    # Convert dataclass to dict and add ZIMAS data
+    result = asdict(analysis)
+    result['zimas_data'] = property_data.get('zimas_data', {})
+    
+    return result
 
 @app.get("/apn/{apn}")
 async def analyze_by_apn(apn: str):
@@ -271,13 +432,17 @@ async def analyze_by_apn(apn: str):
         raise HTTPException(status_code=404, detail=f"No parcel data found for APN: {apn}")
     
     # Prepare data for analysis
-    property_data = prepare_property_data(county_result)
+    property_data = await prepare_property_data(county_result)
     
     # Run development analysis
     analyzer = DevelopmentAnalyzer()
     analysis = analyzer.analyze_development_potential(property_data)
     
-    return analysis
+    # Convert dataclass to dict and add ZIMAS data
+    result = asdict(analysis)
+    result['zimas_data'] = property_data.get('zimas_data', {})
+    
+    return result
 
 @app.get("/test-analyzer")
 async def test_analyzer():
@@ -329,6 +494,20 @@ async def test_sb9():
     analysis = analyzer.analyze_development_potential(sample_data)
     
     return analysis
+
+@app.get("/test-zimas-downtown")
+async def test_zimas_downtown():
+    """Test ZIMAS with known LA City coordinates (downtown LA)"""
+    # Downtown LA coordinates that we know work
+    lat, lon = 34.0522, -118.2437
+    
+    zimas_data = await query_zimas_comprehensive("Downtown LA Test", lat, lon)
+    
+    return {
+        "test_coordinates": {"lat": lat, "lon": lon},
+        "zimas_data": zimas_data,
+        "data_found": bool(zimas_data and zimas_data.get("raw_results"))
+    }
 
 if __name__ == "__main__":
     import uvicorn
