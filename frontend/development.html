@@ -1019,6 +1019,7 @@
 
     <script>
         const API_URL = 'http://localhost:8000';
+        const CACHE_BUSTER = Date.now(); // Force fresh data
         
         document.getElementById('addressInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -1044,10 +1045,11 @@
             setTimeout(() => updateLoadingMessage("Processing development scenarios and feasibility analysis..."), 10000);
             
             try {
-                const response = await fetch(`${API_URL}/analyze`, {
+                const response = await fetch(`${API_URL}/analyze?v=${CACHE_BUSTER}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache'
                     },
                     body: JSON.stringify({ address: input })
                 });
@@ -1162,92 +1164,79 @@
         }
         
         function populateHeroCards(scenarios, data) {
-            // Sort scenarios by total units (ascending) to get distinct unit counts
-            const sortedByUnits = [...scenarios].sort((a, b) => a.total_units - b.total_units);
+            console.log('DEBUG: All scenarios received:', scenarios.map(s => ({name: s.name, units: Math.round(s.total_units), score: s.recommendation_score})));
             
-            // Take up to 3 scenarios with different unit counts
-            const uniqueScenarios = [];
-            const seenUnitCounts = new Set();
+            // Sort by recommendation_score descending to ensure proper order
+            const sortedScenarios = [...scenarios].sort((a, b) => (b.recommendation_score || 0) - (a.recommendation_score || 0));
             
-            for (const scenario of sortedByUnits) {
-                const unitCount = Math.round(scenario.total_units);
-                if (!seenUnitCounts.has(unitCount) && uniqueScenarios.length < 3) {
-                    uniqueScenarios.push(scenario);
-                    seenUnitCounts.add(unitCount);
-                }
-            }
+            console.log('DEBUG: Sorted scenarios:', sortedScenarios.slice(0,3).map(s => ({name: s.name, units: Math.round(s.total_units), score: s.recommendation_score})));
             
-            // Fill with By-Right if we don't have 3 unique scenarios
-            if (uniqueScenarios.length < 3) {
-                const byRight = scenarios.find(s => s.name === 'By-Right');
-                if (byRight && !uniqueScenarios.includes(byRight)) {
-                    uniqueScenarios.unshift(byRight);
-                }
-            }
+            // Find scenarios for Good/Better/Best
+            const goodScenario = scenarios.find(s => s.name === 'By-Right') || sortedScenarios[sortedScenarios.length - 1];
+            const bestScenario = sortedScenarios[0];  // Highest scored
+            const betterScenario = sortedScenarios[1]; // Second highest
             
-            // Ensure we have exactly 3 scenarios, pad with highest unit scenarios if needed
-            while (uniqueScenarios.length < 3) {
-                const remaining = scenarios.filter(s => !uniqueScenarios.includes(s));
-                if (remaining.length > 0) {
-                    uniqueScenarios.push(remaining[0]);
-                } else {
-                    break;
-                }
-            }
+            console.log('DEBUG: Final selection - Good:', goodScenario?.name, 'Better:', betterScenario?.name, 'Best:', bestScenario?.name);
             
-            // Populate cards with the three distinct scenarios
-            const labels = ['Good', 'Better', 'Best'];
-            for (let i = 0; i < 3 && i < uniqueScenarios.length; i++) {
-                const cardId = ['goodCard', 'betterCard', 'bestCard'][i];
-                populateHeroCard(cardId, uniqueScenarios[i], uniqueScenarios[0], labels[i]);
-            }
+            // Populate cards with proper ranking
+            populateHeroCard('bestCard', bestScenario, goodScenario, 'Best');
+            populateHeroCard('betterCard', betterScenario, goodScenario, 'Better'); 
+            populateHeroCard('goodCard', goodScenario, goodScenario, 'Good');
         }
         
         function populateHeroCard(cardId, scenario, baseline, rank) {
-            if (!scenario) return;
+            if (!scenario) {
+                console.log(`DEBUG: No scenario provided for ${cardId}`);
+                return;
+            }
+            
+            console.log(`DEBUG: Populating ${cardId} with ${scenario.name} (${Math.round(scenario.total_units)} units)`);
             
             const card = document.getElementById(cardId);
             const unitsDelta = Math.round(scenario.total_units - 2); // Delta from current 2 units
             
-            // Update title
-            const badges = {'Good': '🥇 BEST', 'Better': '🥈 ALT', 'Best': '🥉 MAX'};
+            // Update title with proper Good/Better/Best
+            const badges = {'Good': '🥉 GOOD', 'Better': '🥈 BETTER', 'Best': '🥇 BEST'};
             const title = card.querySelector('h3');
             if (title) {
-                title.textContent = `${badges[rank] || '🏆'}: ${scenario.name}`;
+                title.textContent = `${badges[rank]}: ${scenario.name}`;
+                console.log(`DEBUG: Set title to: ${title.textContent}`);
             }
             
-            // Update units number
-            card.querySelector('.units-number').textContent = Math.round(scenario.total_units);
+            // Update units number with large, prominent display
+            const unitsEl = card.querySelector('.units-number');
+            const units = Math.round(scenario.total_units);
+            unitsEl.textContent = units;
+            console.log(`DEBUG: Set units to: ${units}`);
             
-            // Update unit delta description
+            // Show revenue alongside units
             const deltaText = card.querySelector('p');
             if (deltaText) {
-                deltaText.textContent = `+${unitsDelta} new units from current 2`;
+                const revenue = scenario.gpr ? `$${Math.round(scenario.gpr/1000)}k/yr GPR` : 'Revenue calculating...';
+                deltaText.innerHTML = `<strong>+${unitsDelta} units</strong> • ${revenue}`;
             }
             
-            // Update rationale
+            // Update rationale with clear recommendation reason
             let rationale = scenario.recommendation_reason || scenario.description || 'Standard development path';
-            if (rationale.startsWith('UNLOCK:')) {
-                rationale = rationale.substring(7).trim(); // Remove 'UNLOCK:' prefix
-            }
             if (rationale.startsWith('Recommended because of')) {
-                // Extract the key benefits from the recommendation
-                const parts = rationale.split(', ');
-                if (parts.length > 1) {
-                    rationale = `${parts[1].charAt(0).toUpperCase() + parts[1].slice(1)} path with ${parts[2] || 'good potential'}`;
-                }
+                rationale = rationale.replace('Recommended because of ', '');
+                rationale = rationale.charAt(0).toUpperCase() + rationale.slice(1);
             }
+            if (rationale.startsWith('UNLOCK:')) {
+                rationale = rationale.substring(7).trim();
+            }
+            
             const rationaleDiv = card.querySelector('.rationale');
             if (rationaleDiv) {
                 rationaleDiv.innerHTML = `💡 ${rationale}`;
             }
             
-            // Update math content
+            // Update math content with detailed calculation
             const mathContent = card.querySelector('.math-content');
             if (mathContent && scenario.unit_calculation_justification) {
                 mathContent.textContent = scenario.unit_calculation_justification;
             } else if (mathContent) {
-                mathContent.textContent = 'Calculation details not available';
+                mathContent.textContent = `Units: ${units}\nRevenue: ${scenario.gpr ? '$' + Math.round(scenario.gpr/1000) + 'k/yr GPR' : 'Calculating...'}\nProcess: ${scenario.approval_path}\nAffordability: ${scenario.affordability_required}`;
             }
             
             // Store scenario data on card for math modal

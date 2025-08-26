@@ -22,6 +22,9 @@ class DevelopmentScenario:
     regulatory_pathway_explanation: str = ""
     recommendation_score: float = 0.0
     recommendation_reason: str = ""
+    gpr: int = 0
+    noi: int = 0
+    property_value: int = 0
     
     def __post_init__(self):
         if self.legal_citations is None:
@@ -170,11 +173,8 @@ class DevelopmentAnalyzer:
         scenarios = self._generate_scenarios(
             base_zoning, existing_conditions, incentives, constraints, lot_area
         )
-        # Consolidate scenarios with same unit count
-        scenarios = self._consolidate_scenarios(scenarios)
-        
-        # Score and rank scenarios
-        scenarios = self._score_scenarios(scenarios, base_zoning, existing_conditions, lot_area)
+        # Apply new ranking logic: Good/Better/Best by units + revenue
+        scenarios = self._rank_good_better_best(scenarios, base_zoning, existing_conditions, lot_area)
         
         # Bottom line assessment
         bottom_line = self._generate_bottom_line(base_zoning, existing_conditions, scenarios)
@@ -352,8 +352,8 @@ class DevelopmentAnalyzer:
         sb423_description = "Extended SB-35 through 2036 with broader application including coastal zones"
         
         # SB-330 Housing Crisis Act / Builder's Remedy
-        # Available when housing element not certified (would need HCD certification status)
-        sb330_eligible = zone.startswith('R')
+        # Available ONLY when housing element not certified by HCD
+        sb330_eligible = self._is_builders_remedy_available(zone)
         sb330_description = "Builder's Remedy available if housing element not certified by HCD"
         
         # AB-2011 Commercial to Housing
@@ -447,11 +447,23 @@ class DevelopmentAnalyzer:
     def _generate_scenarios(self, base: BaseZoning, existing: ExistingConditions, 
                           incentives: IncentiveOpportunities, constraints: Constraints,
                           lot_area: float) -> List[DevelopmentScenario]:
-        """Generate development scenarios with clear unlock requirements"""
+        """Generate development scenarios for programs that actually change density/units"""
         scenarios = []
         
-        # Scenario 1: By-Right
-        by_right_units = max(base.baseline_units, existing.units)  # Can't go below existing if RSO
+        # Core calculations shared across scenarios
+        density_factor = self.DENSITY_FACTORS.get(base.zone, 1000)
+        base_units = lot_area / density_factor if density_factor > 0 else 0
+        bonus_base = max(base_units, existing.units if existing.is_rso else base_units)
+        
+        # Massing constraints
+        far_limit = base.far_limit or 3.0
+        avg_gsf_per_unit = 900  # Conservative estimate
+        gsf_cap = far_limit * lot_area
+        massing_cap_units = gsf_cap / avg_gsf_per_unit
+        
+        # SCENARIO 1: By-Right (always included)
+        by_right_units = max(base_units, existing.units if existing.is_rso else 0)
+        by_right_final = min(by_right_units, massing_cap_units)
         
         # Feasibility logic for by-right
         if existing.is_rso and existing.units > base.baseline_units:
@@ -792,6 +804,132 @@ class DevelopmentAnalyzer:
                 
         
         return consolidated
+    
+    def _is_builders_remedy_available(self, zone: str) -> bool:
+        """Check if Builder's Remedy is actually available based on jurisdiction compliance"""
+        # Hard-coded compliance status for major jurisdictions (should be from database/API)
+        compliant_jurisdictions = {
+            # Major cities with certified housing elements
+            'los_angeles': True,  # HCD certified through 2029
+            'san_francisco': True,
+            'san_diego': True,
+            'oakland': True,
+            'sacramento': True,
+            'long_beach': True,
+            'santa_monica': True,
+            'pasadena': True,
+            'west_hollywood': True,
+            'beverly_hills': True,
+            'culver_city': True,
+            'santa_clarita': True,
+        }
+        
+        # For now, assume this is Los Angeles based on zoning patterns
+        # In production, this should check actual jurisdiction from ZIMAS data
+        if zone.startswith('R'):
+            # LA zoning pattern detected - LA is compliant, so Builder's Remedy NOT available
+            return not compliant_jurisdictions.get('los_angeles', True)
+        
+        # Default to not available for unknown jurisdictions (conservative approach)
+        return False
+
+    def _rank_good_better_best(self, scenarios: List[DevelopmentScenario], base: BaseZoning, 
+                              existing: ExistingConditions, lot_area: float) -> List[DevelopmentScenario]:
+        """Rank scenarios by Good/Better/Best using units + revenue priority"""
+        
+        # Revenue calculations
+        pricing = {
+            'avg_unit_nsf': 700,
+            'rent_per_sf': 3.25, 
+            'vacancy': 0.05,
+            'opex_ratio': 0.35,
+            'cap_rate': 0.055
+        }
+        
+        # Calculate revenue and comprehensive score for each scenario
+        for scenario in scenarios:
+            # Revenue metrics
+            gpr = scenario.total_units * pricing['avg_unit_nsf'] * pricing['rent_per_sf'] * 12
+            noi = gpr * (1 - pricing['vacancy']) * (1 - pricing['opex_ratio'])
+            property_value = noi / pricing['cap_rate']
+            
+            # Store revenue metrics on scenario
+            scenario.gpr = int(gpr)
+            scenario.noi = int(noi) 
+            scenario.property_value = int(property_value)
+            
+            # Scoring weights: balance units and practical affordability
+            w_units = 0.40  # Increased - prioritize unit count
+            w_revenue = 0.30  # Revenue important but not primary 
+            w_process = 0.10  # Process efficiency
+            w_affordability = 0.20  # Reasonable affordability balance
+            
+            # Normalize against max possible for this property
+            max_units = max([s.total_units for s in scenarios] + [1])
+            max_gpr = max([s.total_units * pricing['avg_unit_nsf'] * pricing['rent_per_sf'] * 12 for s in scenarios] + [1])
+            
+            # Unit score
+            unit_score = (scenario.total_units / max_units) * w_units
+            
+            # Revenue score 
+            revenue_score = (gpr / max_gpr) * w_revenue
+            
+            # Process score (ministerial > admin > discretionary)
+            process_score = 0
+            if "Ministerial" in scenario.approval_path:
+                process_score = w_process
+            elif "Administrative" in scenario.approval_path:
+                process_score = w_process * 0.7
+            else:
+                process_score = w_process * 0.4
+                
+            # Affordability balance score (reward reasonable affordability requirements)
+            affordability_score = 0
+            if "None" in scenario.affordability_required:
+                affordability_score = w_affordability * 1.0  # Best: no affordability requirement
+            elif "15%" in scenario.affordability_required:
+                # State Density Bonus: good practical choice but not better than max units
+                affordability_score = w_affordability * 1.0  # Good for 15% VLI (practical)
+            elif "20%" in scenario.affordability_required:
+                affordability_score = w_affordability * 0.8  # Good: reasonable 20% requirement
+            elif "100%" in scenario.affordability_required:
+                affordability_score = w_affordability * -2.0  # Very heavy penalty: limits market revenue completely
+            else:
+                affordability_score = w_affordability * 0.4  # Moderate: other requirements
+            
+            # Final score
+            total_score = (unit_score + revenue_score + process_score + affordability_score) * 100
+            scenario.recommendation_score = total_score
+            
+            # Generate recommendation reason
+            reasons = []
+            if scenario.total_units >= max_units * 0.9:
+                reasons.append("excellent unit yield")
+            elif scenario.total_units >= max_units * 0.7:
+                reasons.append("good unit yield") 
+            else:
+                reasons.append("modest unit yield")
+                
+            if gpr >= max_gpr * 0.9:
+                reasons.append("high revenue potential")
+            elif gpr >= max_gpr * 0.7:
+                reasons.append("good revenue potential")
+                
+            if "Ministerial" in scenario.approval_path:
+                reasons.append("fast ministerial approval")
+            elif "Administrative" in scenario.approval_path:
+                reasons.append("streamlined approval")
+                
+            if "None" in scenario.affordability_required:
+                reasons.append("no affordability requirement")
+                
+            scenario.recommendation_reason = f"Recommended because of {', '.join(reasons[:3])}"
+        
+        # Sort by score (highest first) and return top scenarios
+        scenarios.sort(key=lambda s: s.recommendation_score, reverse=True)
+        
+        # Take top 6-8 scenarios to ensure good variety 
+        return scenarios[:8]
 
     def _score_scenarios(self, scenarios: List[DevelopmentScenario], base: BaseZoning, 
                         existing: ExistingConditions, lot_area: float) -> List[DevelopmentScenario]:
