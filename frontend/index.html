@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LA Zoning Lookup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #5a67d8;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c00;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .results {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .result-section {
+            margin-bottom: 20px;
+        }
+        
+        .result-section h3 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .result-label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .result-value {
+            color: #333;
+        }
+        
+        .overlay-list, .hazard-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .overlay-list li, .hazard-list li {
+            padding: 4px 0;
+        }
+        
+        .hazard-yes {
+            color: #d00;
+            font-weight: 600;
+        }
+        
+        .hazard-no {
+            color: #090;
+        }
+        
+        .raw-data {
+            margin-top: 20px;
+        }
+        
+        .raw-data-toggle {
+            background: #f0f0f0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-block;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .raw-data-toggle:hover {
+            background: #e0e0e0;
+        }
+        
+        .raw-data-content {
+            display: none;
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        
+        .raw-data-content.show {
+            display: block;
+        }
+        
+        pre {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LA Zoning Lookup</h1>
+        <p class="subtitle">Enter a Los Angeles address or APN to retrieve zoning and parcel data</p>
+        
+        <div class="search-container">
+            <input 
+                type="text" 
+                id="addressInput" 
+                placeholder="Enter address (e.g., 2910 Leeward Ave Los Angeles, CA 90005) or APN"
+                autocomplete="off"
+            >
+            <button id="searchBtn" onclick="lookupAddress()">Search</button>
+        </div>
+        
+        <div id="loading" class="loading" style="display: none;">
+            Searching ZIMAS database...
+        </div>
+        
+        <div id="error" class="error" style="display: none;"></div>
+        
+        <div id="results" class="results" style="display: none;">
+            <div class="result-section">
+                <h3>Property Information</h3>
+                <div class="result-item">
+                    <span class="result-label">Address:</span>
+                    <span class="result-value" id="address"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">APN:</span>
+                    <span class="result-value" id="apn"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Use Type:</span>
+                    <span class="result-value" id="useType"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Use Description:</span>
+                    <span class="result-value" id="useDescription"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Year Built:</span>
+                    <span class="result-value" id="yearBuilt"></span>
+                </div>
+            </div>
+            
+            <div class="result-section">
+                <h3>Property Details</h3>
+                <div class="result-item">
+                    <span class="result-label">Units:</span>
+                    <span class="result-value" id="units"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Bedrooms:</span>
+                    <span class="result-value" id="bedrooms"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Bathrooms:</span>
+                    <span class="result-value" id="bathrooms"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Land Area (sq ft):</span>
+                    <span class="result-value" id="sqFtLand"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Building Area (sq ft):</span>
+                    <span class="result-value" id="sqFtBuilding"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Land Value:</span>
+                    <span class="result-value" id="landValue"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Improvement Value:</span>
+                    <span class="result-value" id="improvementValue"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Total Value:</span>
+                    <span class="result-value" id="totalValue"></span>
+                </div>
+            </div>
+            
+            <div class="result-section">
+                <h3>Zoning Information</h3>
+                <div class="result-item">
+                    <span class="result-label">Zone:</span>
+                    <span class="result-value" id="zone"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Height District:</span>
+                    <span class="result-value" id="heightDistrict"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">TOC Tier:</span>
+                    <span class="result-value" id="tocTier"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Rent Stabilization:</span>
+                    <span class="result-value" id="rentStabilization"></span>
+                </div>
+            </div>
+            
+            <div class="result-section" id="overlaysSection" style="display: none;">
+                <h3>Overlays</h3>
+                <ul class="overlay-list" id="overlaysList"></ul>
+            </div>
+            
+            <div class="result-section">
+                <h3>Hazard Zones</h3>
+                <ul class="hazard-list" id="hazardsList"></ul>
+            </div>
+            
+            <div class="raw-data">
+                <div class="raw-data-toggle" onclick="toggleRawData()">
+                    Show Raw Data ▼
+                </div>
+                <div class="raw-data-content" id="rawDataContent">
+                    <pre id="rawDataPre"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'http://localhost:8000';
+        
+        document.getElementById('addressInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                lookupAddress();
+            }
+        });
+        
+        async function lookupAddress() {
+            const input = document.getElementById('addressInput').value.trim();
+            
+            if (!input) {
+                showError('Please enter an address or APN');
+                return;
+            }
+            
+            hideError();
+            hideResults();
+            showLoading();
+            
+            try {
+                const response = await fetch(`${API_URL}/lookup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ address: input })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to fetch data');
+                }
+                
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                showError(error.message || 'An error occurred while fetching data');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        function displayResults(data) {
+            // Property Information
+            document.getElementById('address').textContent = data.address || 'N/A';
+            document.getElementById('apn').textContent = formatAPN(data.apn) || 'N/A';
+            document.getElementById('useType').textContent = data.use_code || 'N/A';
+            document.getElementById('useDescription').textContent = data.use_description || 'N/A';
+            document.getElementById('yearBuilt').textContent = data.year_built || 'N/A';
+            
+            // Property Details
+            document.getElementById('units').textContent = data.units || 'N/A';
+            document.getElementById('bedrooms').textContent = data.bedrooms || 'N/A';
+            document.getElementById('bathrooms').textContent = data.bathrooms || 'N/A';
+            document.getElementById('sqFtLand').textContent = data.sq_ft_land ? formatNumber(data.sq_ft_land) : 'N/A';
+            document.getElementById('sqFtBuilding').textContent = data.sq_ft_building ? formatNumber(data.sq_ft_building) : 'N/A';
+            document.getElementById('landValue').textContent = data.land_value ? formatCurrency(data.land_value) : 'N/A';
+            document.getElementById('improvementValue').textContent = data.improvement_value ? formatCurrency(data.improvement_value) : 'N/A';
+            document.getElementById('totalValue').textContent = data.total_value ? formatCurrency(data.total_value) : 'N/A';
+            
+            // Zoning Information
+            document.getElementById('zone').textContent = data.zone || 'N/A';
+            document.getElementById('heightDistrict').textContent = data.height_district || 'N/A';
+            document.getElementById('tocTier').textContent = data.toc_tier || 'None';
+            document.getElementById('rentStabilization').textContent = data.rent_stabilization ? 'Yes' : 'No';
+            
+            const overlaysList = document.getElementById('overlaysList');
+            overlaysList.innerHTML = '';
+            const overlaysSection = document.getElementById('overlaysSection');
+            
+            if (Object.keys(data.overlays).length > 0) {
+                overlaysSection.style.display = 'block';
+                for (const [key, value] of Object.entries(data.overlays)) {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<div class="result-item">
+                        <span class="result-label">${formatLabel(key)}:</span>
+                        <span class="result-value">${value || 'N/A'}</span>
+                    </div>`;
+                    overlaysList.appendChild(li);
+                }
+            } else {
+                overlaysSection.style.display = 'none';
+            }
+            
+            const hazardsList = document.getElementById('hazardsList');
+            hazardsList.innerHTML = '';
+            for (const [key, value] of Object.entries(data.hazards)) {
+                const li = document.createElement('li');
+                li.innerHTML = `<div class="result-item">
+                    <span class="result-label">${formatLabel(key)}:</span>
+                    <span class="result-value ${value ? 'hazard-yes' : 'hazard-no'}">${value ? 'Yes' : 'No'}</span>
+                </div>`;
+                hazardsList.appendChild(li);
+            }
+            
+            if (data.raw_data) {
+                document.getElementById('rawDataPre').textContent = JSON.stringify(data.raw_data, null, 2);
+            }
+            
+            document.getElementById('results').style.display = 'block';
+        }
+        
+        function formatAPN(apn) {
+            if (!apn) return '';
+            const clean = apn.replace(/[^0-9]/g, '');
+            if (clean.length >= 10) {
+                return `${clean.slice(0, 4)}-${clean.slice(4, 7)}-${clean.slice(7)}`;
+            }
+            return apn;
+        }
+        
+        function formatLabel(key) {
+            return key.split('_').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+            ).join(' ');
+        }
+        
+        function formatNumber(num) {
+            return new Intl.NumberFormat('en-US').format(num);
+        }
+        
+        function formatCurrency(num) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(num);
+        }
+        
+        function toggleRawData() {
+            const content = document.getElementById('rawDataContent');
+            const toggle = document.querySelector('.raw-data-toggle');
+            
+            if (content.classList.contains('show')) {
+                content.classList.remove('show');
+                toggle.textContent = 'Show Raw Data ▼';
+            } else {
+                content.classList.add('show');
+                toggle.textContent = 'Hide Raw Data ▲';
+            }
+        }
+        
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('searchBtn').disabled = true;
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('searchBtn').disabled = false;
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+        
+        function hideResults() {
+            document.getElementById('results').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

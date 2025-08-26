@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What Can Be Built Here? - LA Development Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #2E86AB 0%, #A23B72 100%);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            color: #2E86AB;
+            font-size: 42px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+        
+        .tagline {
+            color: #666;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #888;
+            font-size: 16px;
+        }
+        
+        .search-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        input {
+            flex: 1;
+            padding: 16px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #2E86AB;
+            box-shadow: 0 0 0 3px rgba(46, 134, 171, 0.1);
+        }
+        
+        .analyze-btn {
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #2E86AB 0%, #A23B72 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        
+        .analyze-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #666;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2E86AB;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #fee;
+            border: 2px solid #fcc;
+            color: #c00;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 16px;
+        }
+        
+        .results {
+            margin-top: 30px;
+        }
+        
+        .property-summary {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-left: 5px solid #2E86AB;
+        }
+        
+        .section h2 {
+            color: #2E86AB;
+            font-size: 24px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-icon {
+            margin-right: 10px;
+            font-size: 28px;
+        }
+        
+        .base-zoning {
+            background: #e8f4f8;
+            border-left-color: #2E86AB;
+        }
+        
+        .scenarios {
+            background: #f0f8e8;
+            border-left-color: #28a745;
+        }
+        
+        .constraints {
+            background: #fff5e6;
+            border-left-color: #fd7e14;
+        }
+        
+        .next-steps {
+            background: #f3e8ff;
+            border-left-color: #6f42c1;
+        }
+        
+        .scenario-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .scenario-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .scenario-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--accent-color);
+        }
+        
+        .scenario-card.by-right {
+            --accent-color: #6c757d;
+        }
+        
+        .scenario-card.toc {
+            --accent-color: #28a745;
+        }
+        
+        .scenario-card.state-db {
+            --accent-color: #007bff;
+        }
+        
+        .scenario-card.affordable {
+            --accent-color: #fd7e14;
+        }
+        
+        .scenario-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            border-color: var(--accent-color);
+        }
+        
+        .scenario-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .scenario-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .feasibility {
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .feasibility.high {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .feasibility.medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .feasibility.low {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .unit-count {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .total-units {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--accent-color);
+            line-height: 1;
+        }
+        
+        .unit-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .net-new {
+            font-size: 18px;
+            font-weight: 600;
+            color: #28a745;
+            margin-top: 8px;
+        }
+        
+        .scenario-details {
+            border-top: 1px solid #e9ecef;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .detail-label {
+            color: #666;
+        }
+        
+        .detail-value {
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .benefits-list, .constraints-list, .steps-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .benefits-list li, .constraints-list li, .steps-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        
+        .benefits-list li::before {
+            content: '✅';
+            position: absolute;
+            left: 0;
+        }
+        
+        .constraints-list li::before {
+            content: '⚠️';
+            position: absolute;
+            left: 0;
+        }
+        
+        .steps-list li::before {
+            content: '📋';
+            position: absolute;
+            left: 0;
+        }
+        
+        .bottom-line {
+            background: linear-gradient(135deg, #2E86AB 0%, #A23B72 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 30px 0;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            line-height: 1.6;
+        }
+        
+        .bottom-line strong {
+            font-weight: 800;
+        }
+        
+        .details-toggle {
+            background: #e9ecef;
+            padding: 15px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            margin: 30px 0 20px 0;
+            font-weight: 600;
+            color: #495057;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .details-toggle:hover {
+            background: #dee2e6;
+            border-color: #2E86AB;
+            color: #2E86AB;
+        }
+        
+        .detailed-analysis {
+            border-top: 2px solid #dee2e6;
+            padding-top: 30px;
+        }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .detail-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .detail-item strong {
+            display: block;
+            color: #495057;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .detail-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2E86AB;
+        }
+        
+        .scenario-detailed {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .scenario-detailed h4 {
+            color: #2E86AB;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .benefits-grid, .constraints-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .benefit-item, .constraint-item {
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .benefit-item {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+        
+        .constraint-item {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .raw-data-container {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .regulatory-item {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .reg-title {
+            font-weight: 700;
+            color: #2E86AB;
+            margin-bottom: 8px;
+        }
+        
+        .reg-description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .reg-value {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        @media (max-width: 768px) {
+            .scenario-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .search-container {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 32px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>What Can Be Built Here?</h1>
+            <p class="tagline">LA Development Potential Analyzer</p>
+            <p class="subtitle">Enter any Los Angeles address to discover development scenarios, unit yields, and feasibility analysis</p>
+        </div>
+        
+        <div class="search-container">
+            <input 
+                type="text" 
+                id="addressInput" 
+                placeholder="Enter address or APN (e.g., 2910 Leeward Ave Los Angeles, CA)"
+                autocomplete="off"
+            >
+            <button class="analyze-btn" id="analyzeBtn" onclick="analyzeProperty()">Analyze</button>
+        </div>
+        
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <div>Analyzing development potential...</div>
+        </div>
+        
+        <div id="error" class="error" style="display: none;"></div>
+        
+        <div id="results" class="results" style="display: none;">
+            <div class="property-summary" id="propertySummary"></div>
+            
+            <div class="section base-zoning">
+                <h2><span class="section-icon">🏘️</span>Base Zoning Analysis</h2>
+                <div id="baseZoningContent"></div>
+            </div>
+            
+            <div class="section scenarios">
+                <h2><span class="section-icon">📊</span>Development Scenarios</h2>
+                <div class="scenario-grid" id="scenarioGrid"></div>
+            </div>
+            
+            <div class="bottom-line" id="bottomLine"></div>
+            
+            <div class="section constraints">
+                <h2><span class="section-icon">⚠️</span>Constraints & Considerations</h2>
+                <ul class="constraints-list" id="constraintsList"></ul>
+            </div>
+            
+            <div class="section next-steps">
+                <h2><span class="section-icon">🎯</span>Recommended Next Steps</h2>
+                <ul class="steps-list" id="nextStepsList"></ul>
+            </div>
+            
+            <!-- Detailed Analysis Section -->
+            <div class="details-toggle" onclick="toggleDetails()">
+                <span id="detailsToggleText">Show Detailed Analysis & Raw Data ▼</span>
+            </div>
+            
+            <div id="detailedAnalysis" class="detailed-analysis" style="display: none;">
+                <div class="section">
+                    <h2><span class="section-icon">📋</span>Existing Conditions</h2>
+                    <div id="existingConditions"></div>
+                </div>
+                
+                <div class="section">
+                    <h2><span class="section-icon">🎁</span>Incentive Opportunities</h2>
+                    <div id="incentiveOpportunities"></div>
+                </div>
+                
+                <div class="section">
+                    <h2><span class="section-icon">📊</span>Detailed Scenario Analysis</h2>
+                    <div id="detailedScenarios"></div>
+                </div>
+                
+                <div class="section">
+                    <h2><span class="section-icon">🏛️</span>Regulatory Framework</h2>
+                    <div id="regulatoryFramework"></div>
+                </div>
+                
+                <div class="section">
+                    <h2><span class="section-icon">📈</span>Feasibility Rating Guide</h2>
+                    <div id="feasibilityGuide">
+                        <div class="regulatory-item" style="border-left: 4px solid #28a745;">
+                            <div class="reg-title" style="color: #28a745;">High Feasibility</div>
+                            <div class="reg-description">• Clear regulatory pathway with established precedent<br>
+                            • Minimal environmental or historic constraints<br>
+                            • Strong market demand for housing type<br>
+                            • Streamlined approval process available</div>
+                        </div>
+                        
+                        <div class="regulatory-item" style="border-left: 4px solid #ffc107;">
+                            <div class="reg-title" style="color: #856404;">Medium Feasibility</div>
+                            <div class="reg-description">• Some complexity due to constraints or over-built conditions<br>
+                            • Additional studies or mitigation may be required<br>
+                            • RSO replacement adds complexity but manageable<br>
+                            • Environmental hazards require engineering solutions</div>
+                        </div>
+                        
+                        <div class="regulatory-item" style="border-left: 4px solid #dc3545;">
+                            <div class="reg-title" style="color: #dc3545;">Low Feasibility</div>
+                            <div class="reg-description">• Significant regulatory or environmental barriers<br>
+                            • Historic restrictions or community opposition likely<br>
+                            • Complex approval process with uncertain outcome<br>
+                            • Market conditions unfavorable for housing type</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h2><span class="section-icon">🗄️</span>Raw Property Data</h2>
+                    <div class="raw-data-container">
+                        <pre id="rawDataContent"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'http://localhost:8000';
+        
+        document.getElementById('addressInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                analyzeProperty();
+            }
+        });
+        
+        async function analyzeProperty() {
+            const input = document.getElementById('addressInput').value.trim();
+            
+            if (!input) {
+                showError('Please enter an address or APN');
+                return;
+            }
+            
+            hideError();
+            hideResults();
+            showLoading();
+            
+            try {
+                const response = await fetch(`${API_URL}/analyze`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ address: input })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to analyze property');
+                }
+                
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                showError(error.message || 'An error occurred during analysis');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        function displayResults(data) {
+            // Property Summary
+            document.getElementById('propertySummary').textContent = data.property_summary;
+            
+            // Base Zoning
+            const baseZoning = data.base_zoning;
+            document.getElementById('baseZoningContent').innerHTML = `
+                <div style="font-size: 16px; margin-bottom: 15px;">
+                    <strong>Zone:</strong> ${baseZoning.complete_zone} 
+                    <span style="margin-left: 20px;"><strong>Baseline Yield:</strong> ${Math.round(baseZoning.baseline_units)} units</span>
+                </div>
+                <div style="color: #666; font-size: 15px;">
+                    ${baseZoning.interpretation}
+                </div>
+            `;
+            
+            // Development Scenarios
+            const grid = document.getElementById('scenarioGrid');
+            grid.innerHTML = '';
+            
+            data.development_scenarios.forEach(scenario => {
+                const card = createScenarioCard(scenario);
+                grid.appendChild(card);
+            });
+            
+            // Bottom Line
+            document.getElementById('bottomLine').innerHTML = data.bottom_line;
+            
+            // Constraints
+            const constraintsList = document.getElementById('constraintsList');
+            constraintsList.innerHTML = '';
+            
+            const allConstraints = [
+                ...data.existing_conditions.demolition_constraints,
+                ...data.constraints.environmental_hazards,
+                ...data.constraints.historic_restrictions,
+                ...data.constraints.overlay_requirements
+            ];
+            
+            if (allConstraints.length === 0) {
+                constraintsList.innerHTML = '<li>No significant constraints identified</li>';
+            } else {
+                allConstraints.forEach(constraint => {
+                    const li = document.createElement('li');
+                    li.textContent = constraint;
+                    constraintsList.appendChild(li);
+                });
+            }
+            
+            // Next Steps
+            const stepsList = document.getElementById('nextStepsList');
+            stepsList.innerHTML = '';
+            
+            data.next_steps.forEach(step => {
+                const li = document.createElement('li');
+                li.textContent = step;
+                stepsList.appendChild(li);
+            });
+            
+            // Populate detailed analysis sections
+            populateDetailedAnalysis(data);
+            
+            document.getElementById('results').style.display = 'block';
+        }
+        
+        function populateDetailedAnalysis(data) {
+            // Existing Conditions
+            const existingConditions = data.existing_conditions;
+            document.getElementById('existingConditions').innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <strong>Current Units</strong>
+                        <div class="detail-value">${existingConditions.units}</div>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Building Size</strong>
+                        <div class="detail-value">${existingConditions.building_sf ? formatNumber(existingConditions.building_sf) + ' sq ft' : 'N/A'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Year Built</strong>
+                        <div class="detail-value">${existingConditions.year_built || 'N/A'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <strong>RSO Status</strong>
+                        <div class="detail-value">${existingConditions.is_rso ? 'Yes - Rent Stabilized' : 'No'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Replacement Required</strong>
+                        <div class="detail-value">${existingConditions.replacement_required} units</div>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Above Baseline</strong>
+                        <div class="detail-value">${existingConditions.above_baseline ? 'Yes' : 'No'}</div>
+                    </div>
+                </div>
+                ${existingConditions.demolition_constraints.length > 0 ? 
+                    '<h4>Demolition Constraints:</h4><ul class="constraints-list">' +
+                    existingConditions.demolition_constraints.map(c => '<li>' + c + '</li>').join('') +
+                    '</ul>' : ''
+                }
+            `;
+            
+            // Incentive Opportunities
+            const incentives = data.incentive_opportunities;
+            document.getElementById('incentiveOpportunities').innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <strong>TOC Tier</strong>
+                        <div class="detail-value">${incentives.toc_tier || 'Not eligible'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <strong>State Density Bonus</strong>
+                        <div class="detail-value">${incentives.state_density_bonus ? 'Eligible' : 'Not eligible'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <strong>AB 2097 Transit</strong>
+                        <div class="detail-value">${incentives.ab2097_eligible ? 'Eligible' : 'Not eligible'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <strong>ED-1 Affordable</strong>
+                        <div class="detail-value">${incentives.ed1_eligible ? 'Eligible' : 'Not eligible'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Opportunity Zone</strong>
+                        <div class="detail-value">${incentives.opportunity_zone ? 'Yes' : 'No'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Adaptive Reuse</strong>
+                        <div class="detail-value">${incentives.adaptive_reuse ? 'Eligible' : 'Not eligible'}</div>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <strong>TOC Analysis:</strong> ${incentives.toc_distance_description}
+                </div>
+            `;
+            
+            // Detailed Scenarios
+            const scenariosContainer = document.getElementById('detailedScenarios');
+            scenariosContainer.innerHTML = '';
+            
+            data.development_scenarios.forEach(scenario => {
+                const scenarioDiv = document.createElement('div');
+                scenarioDiv.className = 'scenario-detailed';
+                scenarioDiv.innerHTML = `
+                    <h4>${scenario.name} - ${Math.round(scenario.total_units)} Units</h4>
+                    
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <strong>Total Units</strong>
+                            <div class="detail-value">${Math.round(scenario.total_units)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Net New Units</strong>
+                            <div class="detail-value">+${Math.round(scenario.net_new_units)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Affordability Required</strong>
+                            <div class="detail-value">${scenario.affordability_required}</div>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Approval Path</strong>
+                            <div class="detail-value">${scenario.approval_path}</div>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Feasibility</strong>
+                            <div class="detail-value">${scenario.feasibility}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px;">
+                        <div style="background: #e8f4fd; padding: 12px; border-radius: 6px; border-left: 4px solid #2E86AB;">
+                            <strong>🔓 How to Unlock:</strong><br>
+                            ${scenario.description}
+                        </div>
+                    </div>
+                    
+                    ${scenario.key_benefits.length > 0 ? 
+                        '<h5 style="margin: 15px 0 10px 0;">Key Benefits:</h5>' +
+                        '<div class="benefits-grid">' +
+                        scenario.key_benefits.map(benefit => '<div class="benefit-item">✅ ' + benefit + '</div>').join('') +
+                        '</div>' : ''
+                    }
+                    
+                    ${scenario.constraints.length > 0 ? 
+                        '<h5 style="margin: 15px 0 10px 0;">Constraints:</h5>' +
+                        '<div class="constraints-grid">' +
+                        scenario.constraints.map(constraint => '<div class="constraint-item">⚠️ ' + constraint + '</div>').join('') +
+                        '</div>' : ''
+                    }
+                `;
+                scenariosContainer.appendChild(scenarioDiv);
+            });
+            
+            // Regulatory Framework
+            const baseZoning = data.base_zoning;
+            document.getElementById('regulatoryFramework').innerHTML = `
+                <div class="regulatory-item">
+                    <div class="reg-title">Zone Classification</div>
+                    <div class="reg-description">Base zoning designation and density allowance</div>
+                    <div class="reg-value">${baseZoning.complete_zone} - ${baseZoning.density_factor} sq ft per unit</div>
+                </div>
+                
+                <div class="regulatory-item">
+                    <div class="reg-title">Height Limitations</div>
+                    <div class="reg-description">Maximum building height allowed</div>
+                    <div class="reg-value">${baseZoning.height_limit_ft} feet</div>
+                </div>
+                
+                <div class="regulatory-item">
+                    <div class="reg-title">Floor Area Ratio (FAR)</div>
+                    <div class="reg-description">Maximum floor area relative to lot size</div>
+                    <div class="reg-value">${baseZoning.far_limit}:1</div>
+                </div>
+                
+                <div class="regulatory-item">
+                    <div class="reg-title">Baseline Unit Calculation</div>
+                    <div class="reg-description">Units allowed under base zoning</div>
+                    <div class="reg-value">${formatNumber(data.base_zoning.baseline_units)} units (${formatNumber(data.property_summary.split('•')[1]?.trim().split(' ')[0])} sq ft ÷ ${baseZoning.density_factor})</div>
+                </div>
+            `;
+            
+            // Raw Property Data - extract from the API response
+            const rawData = {
+                development_analysis: data,
+                property_data: {
+                    // This would include the raw county data if available
+                    apn: data.property_summary.split('•')[0]?.trim(),
+                    lot_size: data.property_summary.split('•')[1]?.trim(),
+                    zoning: data.base_zoning,
+                    existing_conditions: data.existing_conditions,
+                    incentive_opportunities: data.incentive_opportunities,
+                    constraints: data.constraints
+                }
+            };
+            
+            document.getElementById('rawDataContent').textContent = JSON.stringify(rawData, null, 2);
+        }
+        
+        function toggleDetails() {
+            const detailedAnalysis = document.getElementById('detailedAnalysis');
+            const toggleText = document.getElementById('detailsToggleText');
+            
+            if (detailedAnalysis.style.display === 'none') {
+                detailedAnalysis.style.display = 'block';
+                toggleText.textContent = 'Hide Detailed Analysis & Raw Data ▲';
+            } else {
+                detailedAnalysis.style.display = 'none';
+                toggleText.textContent = 'Show Detailed Analysis & Raw Data ▼';
+            }
+        }
+        
+        function formatNumber(num) {
+            if (typeof num === 'string') {
+                num = parseFloat(num.replace(/,/g, ''));
+            }
+            return new Intl.NumberFormat('en-US').format(Math.round(num));
+        }
+        
+        function createScenarioCard(scenario) {
+            const card = document.createElement('div');
+            let cardClass = 'scenario-card';
+            
+            if (scenario.name.includes('By-Right')) cardClass += ' by-right';
+            else if (scenario.name.includes('TOC')) cardClass += ' toc';
+            else if (scenario.name.includes('State')) cardClass += ' state-db';
+            else if (scenario.name.includes('Affordable')) cardClass += ' affordable';
+            
+            card.className = cardClass;
+            
+            card.innerHTML = `
+                <div class="scenario-header">
+                    <div class="scenario-name">${scenario.name}</div>
+                    <div class="feasibility ${scenario.feasibility.toLowerCase()}">${scenario.feasibility}</div>
+                </div>
+                
+                <div class="unit-count">
+                    <div class="total-units">${Math.round(scenario.total_units)}</div>
+                    <div class="unit-label">Total Units</div>
+                    ${scenario.net_new_units > 0 ? 
+                        `<div class="net-new">+${Math.round(scenario.net_new_units)} net new</div>` : 
+                        '<div class="net-new">No net increase</div>'
+                    }
+                </div>
+                
+                <div class="scenario-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Affordability:</span>
+                        <span class="detail-value">${scenario.affordability_required}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Approval Path:</span>
+                        <span class="detail-value">${scenario.approval_path}</span>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('analyzeBtn').disabled = true;
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('analyzeBtn').disabled = false;
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+        
+        function hideResults() {
+            document.getElementById('results').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

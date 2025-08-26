@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LA Comprehensive Zoning Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #5a67d8;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c00;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .results {
+            margin-top: 20px;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        
+        .result-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .result-section h3 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #667eea;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-icon {
+            margin-right: 8px;
+            font-size: 20px;
+        }
+        
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .result-label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .result-value {
+            color: #333;
+            text-align: right;
+        }
+        
+        .value-highlight {
+            background: #e8f4fd;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        .scenario-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .scenario-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .scenario-card.baseline {
+            border-color: #6c757d;
+        }
+        
+        .scenario-card.toc {
+            border-color: #28a745;
+        }
+        
+        .scenario-card.state-db {
+            border-color: #007bff;
+        }
+        
+        .scenario-card.ed1 {
+            border-color: #fd7e14;
+        }
+        
+        .scenario-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .scenario-units {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .scenario-subtitle {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+        
+        .citations {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .citation-item {
+            padding: 8px 12px;
+            background: white;
+            border-left: 4px solid #667eea;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+        
+        .citation-code {
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .citation-desc {
+            color: #666;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        
+        .eligible {
+            color: #28a745;
+            font-weight: 600;
+        }
+        
+        .not-eligible {
+            color: #dc3545;
+            font-weight: 600;
+        }
+        
+        .hazard-yes {
+            color: #dc3545;
+            font-weight: 600;
+        }
+        
+        .hazard-no {
+            color: #28a745;
+        }
+        
+        .raw-data-toggle {
+            background: #e9ecef;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-block;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .raw-data-content {
+            display: none;
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            margin-top: 10px;
+        }
+        
+        .raw-data-content.show {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .scenario-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LA Comprehensive Zoning Analysis</h1>
+        <p class="subtitle">Advanced entitlement analysis for Los Angeles properties - Enter an address or APN to get comprehensive zoning, incentive, and development potential analysis</p>
+        
+        <div class="search-container">
+            <input 
+                type="text" 
+                id="addressInput" 
+                placeholder="Enter address (e.g., 2910 Leeward Ave Los Angeles, CA 90005) or APN"
+                autocomplete="off"
+            >
+            <button id="searchBtn" onclick="lookupAddress()">Analyze</button>
+        </div>
+        
+        <div id="loading" class="loading" style="display: none;">
+            Analyzing property and zoning regulations...
+        </div>
+        
+        <div id="error" class="error" style="display: none;"></div>
+        
+        <div id="results" class="results" style="display: none;">
+            <div class="results-grid">
+                <!-- Core Zoning Envelope -->
+                <div class="result-section">
+                    <h3><span class="section-icon">🏘️</span>Core Zoning Envelope</h3>
+                    <div class="result-item">
+                        <span class="result-label">Zone:</span>
+                        <span class="result-value" id="coreZone"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Height District:</span>
+                        <span class="result-value" id="coreHeightDistrict"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Complete Zone:</span>
+                        <span class="result-value value-highlight" id="coreZoneComplete"></span>
+                    </div>
+                </div>
+
+                <!-- Property Information -->
+                <div class="result-section">
+                    <h3><span class="section-icon">🏠</span>Property Information</h3>
+                    <div class="result-item">
+                        <span class="result-label">Address:</span>
+                        <span class="result-value" id="address"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">APN:</span>
+                        <span class="result-value" id="apn"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Use Description:</span>
+                        <span class="result-value" id="useDescription"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Year Built:</span>
+                        <span class="result-value" id="yearBuilt"></span>
+                    </div>
+                </div>
+
+                <!-- Lot & Units Analysis -->
+                <div class="result-section">
+                    <h3><span class="section-icon">📐</span>Lot & Units</h3>
+                    <div class="result-item">
+                        <span class="result-label">Lot Area (sq ft):</span>
+                        <span class="result-value" id="lotAreaSqft"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Baseline Units:</span>
+                        <span class="result-value value-highlight" id="baselineUnits"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Existing Units:</span>
+                        <span class="result-value" id="existingUnits"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Replacement Units:</span>
+                        <span class="result-value" id="replacementUnits"></span>
+                    </div>
+                </div>
+
+                <!-- Incentive Eligibility -->
+                <div class="result-section">
+                    <h3><span class="section-icon">🎯</span>Incentive Eligibility</h3>
+                    <div class="result-item">
+                        <span class="result-label">TOC Eligible:</span>
+                        <span class="result-value" id="tocEligible"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">TOC Tier:</span>
+                        <span class="result-value" id="tocTier"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">State Density Bonus:</span>
+                        <span class="result-value" id="stateDensityBonus"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">ED-1 Eligible:</span>
+                        <span class="result-value" id="ed1Eligible"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">SB-9 Eligible:</span>
+                        <span class="result-value" id="sb9Eligible"></span>
+                    </div>
+                </div>
+
+                <!-- Transit & Parking -->
+                <div class="result-section">
+                    <h3><span class="section-icon">🚌</span>Transit & Parking</h3>
+                    <div class="result-item">
+                        <span class="result-label">AB 2097 Qualified:</span>
+                        <span class="result-value" id="ab2097Qualified"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Baseline Parking:</span>
+                        <span class="result-value" id="baselineParking"></span>
+                    </div>
+                </div>
+
+                <!-- Hazards & Constraints -->
+                <div class="result-section">
+                    <h3><span class="section-icon">⚠️</span>Hazards & Constraints</h3>
+                    <div class="result-item">
+                        <span class="result-label">Fault Zone:</span>
+                        <span class="result-value" id="faultZone"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Liquefaction:</span>
+                        <span class="result-value" id="liquefaction"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Fire Hazard:</span>
+                        <span class="result-value" id="fireHazard"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Methane Buffer:</span>
+                        <span class="result-value" id="methaneBuffer"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Development Scenarios -->
+            <div class="result-section" style="margin-top: 20px;">
+                <h3><span class="section-icon">📊</span>Derived Development Envelopes</h3>
+                <div class="scenario-grid" id="scenarioGrid">
+                    <!-- Scenarios will be populated here -->
+                </div>
+            </div>
+
+            <!-- Citations -->
+            <div class="citations">
+                <h3><span class="section-icon">📚</span>Regulatory Citations</h3>
+                <div id="citationsList">
+                    <!-- Citations will be populated here -->
+                </div>
+            </div>
+
+            <!-- Raw Data -->
+            <div class="raw-data-toggle" onclick="toggleRawData()">
+                Show Raw Data ▼
+            </div>
+            <div class="raw-data-content" id="rawDataContent">
+                <pre id="rawDataPre"></pre>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'http://localhost:8000';
+        
+        document.getElementById('addressInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                lookupAddress();
+            }
+        });
+        
+        async function lookupAddress() {
+            const input = document.getElementById('addressInput').value.trim();
+            
+            if (!input) {
+                showError('Please enter an address or APN');
+                return;
+            }
+            
+            hideError();
+            hideResults();
+            showLoading();
+            
+            try {
+                const response = await fetch(`${API_URL}/lookup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ address: input })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to fetch data');
+                }
+                
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                showError(error.message || 'An error occurred while fetching data');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        function displayResults(data) {
+            // Core Zoning Envelope
+            const coreZoning = data.core_zoning_envelope || {};
+            document.getElementById('coreZone').textContent = coreZoning.zone || 'N/A';
+            document.getElementById('coreHeightDistrict').textContent = coreZoning.height_district || 'N/A';
+            document.getElementById('coreZoneComplete').textContent = coreZoning.zone_complete || 'N/A';
+
+            // Property Information
+            document.getElementById('address').textContent = data.address || 'N/A';
+            document.getElementById('apn').textContent = formatAPN(data.apn) || 'N/A';
+            document.getElementById('useDescription').textContent = data.use_description || 'N/A';
+            document.getElementById('yearBuilt').textContent = data.year_built || 'N/A';
+
+            // Lot & Units
+            const lotUnits = data.lot_units || {};
+            document.getElementById('lotAreaSqft').textContent = lotUnits.lot_area_sqft ? formatNumber(lotUnits.lot_area_sqft) : 'N/A';
+            document.getElementById('baselineUnits').textContent = lotUnits.baseline_units ? Math.round(lotUnits.baseline_units * 100) / 100 : 'N/A';
+            document.getElementById('existingUnits').textContent = lotUnits.existing_units || 'N/A';
+            document.getElementById('replacementUnits').textContent = lotUnits.replacement_units ? Math.round(lotUnits.replacement_units * 100) / 100 : 'N/A';
+
+            // Incentive Eligibility
+            const incentives = data.incentive_eligibility || {};
+            const toc = incentives.toc || {};
+            const stateDB = incentives.state_density_bonus || {};
+            const ed1 = incentives.ed1 || {};
+            const sb9 = incentives.sb9 || {};
+
+            document.getElementById('tocEligible').innerHTML = toc.eligible ? '<span class="eligible">Yes</span>' : '<span class="not-eligible">No</span>';
+            document.getElementById('tocTier').textContent = toc.tier || 'N/A';
+            document.getElementById('stateDensityBonus').innerHTML = stateDB.eligible ? '<span class="eligible">Yes</span>' : '<span class="not-eligible">No</span>';
+            document.getElementById('ed1Eligible').innerHTML = ed1.eligible ? '<span class="eligible">Yes</span>' : '<span class="not-eligible">No</span>';
+            document.getElementById('sb9Eligible').innerHTML = sb9.eligible ? '<span class="eligible">Yes</span>' : '<span class="not-eligible">No</span>';
+
+            // Transit & Parking
+            const transitParking = data.transit_parking || {};
+            document.getElementById('ab2097Qualified').innerHTML = transitParking.qualifies_ab2097 ? '<span class="eligible">Yes</span>' : '<span class="not-eligible">No</span>';
+            document.getElementById('baselineParking').textContent = transitParking.parking_baseline ? transitParking.parking_baseline + ' spaces/unit' : 'N/A';
+
+            // Hazards
+            const hazards = data.hazards || {};
+            document.getElementById('faultZone').innerHTML = hazards.fault_zone ? '<span class="hazard-yes">Yes</span>' : '<span class="hazard-no">No</span>';
+            document.getElementById('liquefaction').innerHTML = hazards.liquefaction ? '<span class="hazard-yes">Yes</span>' : '<span class="hazard-no">No</span>';
+            document.getElementById('fireHazard').innerHTML = hazards.very_high_fire_hazard ? '<span class="hazard-yes">Yes</span>' : '<span class="hazard-no">No</span>';
+            document.getElementById('methaneBuffer').innerHTML = hazards.methane_buffer ? '<span class="hazard-yes">Yes</span>' : '<span class="hazard-no">No</span>';
+
+            // Development Scenarios
+            displayScenarios(data.derived_envelopes || {});
+
+            // Citations
+            displayCitations(data.citations || []);
+
+            // Raw Data
+            if (data.raw_data) {
+                document.getElementById('rawDataPre').textContent = JSON.stringify(data, null, 2);
+            }
+            
+            document.getElementById('results').style.display = 'block';
+        }
+
+        function displayScenarios(envelopes) {
+            const grid = document.getElementById('scenarioGrid');
+            grid.innerHTML = '';
+
+            // Baseline scenario
+            if (envelopes.baseline) {
+                const baseline = envelopes.baseline;
+                grid.appendChild(createScenarioCard('Baseline', 'baseline', baseline.units, 'By-right development'));
+            }
+
+            // TOC scenario
+            if (envelopes.toc) {
+                const toc = envelopes.toc;
+                grid.appendChild(createScenarioCard('TOC', 'toc', toc.units, 'Transit-oriented bonus'));
+            }
+
+            // State Density Bonus scenario
+            if (envelopes.state_db) {
+                const stateDB = envelopes.state_db;
+                grid.appendChild(createScenarioCard('State DB', 'state-db', stateDB.units, 'Affordable housing bonus'));
+            }
+
+            // ED-1 scenario
+            if (envelopes.ed1) {
+                const ed1 = envelopes.ed1;
+                grid.appendChild(createScenarioCard('ED-1', 'ed1', ed1.units_range ? `${ed1.units_range[0]}-${ed1.units_range[1]}` : ed1.units, '100% affordable'));
+            }
+        }
+
+        function createScenarioCard(title, type, units, subtitle) {
+            const card = document.createElement('div');
+            card.className = `scenario-card ${type}`;
+            card.innerHTML = `
+                <div class="scenario-title">${title}</div>
+                <div class="scenario-units">${typeof units === 'number' ? Math.round(units) : units}</div>
+                <div class="scenario-subtitle">${subtitle}</div>
+            `;
+            return card;
+        }
+
+        function displayCitations(citations) {
+            const list = document.getElementById('citationsList');
+            list.innerHTML = '';
+
+            if (citations.length === 0) {
+                list.innerHTML = '<p>No regulatory citations available.</p>';
+                return;
+            }
+
+            citations.forEach(citation => {
+                const item = document.createElement('div');
+                item.className = 'citation-item';
+                item.innerHTML = `
+                    <div class="citation-code">${citation.code}</div>
+                    <div class="citation-desc">${citation.description}</div>
+                `;
+                list.appendChild(item);
+            });
+        }
+        
+        function formatAPN(apn) {
+            if (!apn) return '';
+            const clean = apn.replace(/[^0-9]/g, '');
+            if (clean.length >= 10) {
+                return `${clean.slice(0, 4)}-${clean.slice(4, 7)}-${clean.slice(7)}`;
+            }
+            return apn;
+        }
+        
+        function formatNumber(num) {
+            return new Intl.NumberFormat('en-US').format(Math.round(num));
+        }
+        
+        function toggleRawData() {
+            const content = document.getElementById('rawDataContent');
+            const toggle = document.querySelector('.raw-data-toggle');
+            
+            if (content.classList.contains('show')) {
+                content.classList.remove('show');
+                toggle.textContent = 'Show Raw Data ▼';
+            } else {
+                content.classList.add('show');
+                toggle.textContent = 'Hide Raw Data ▲';
+            }
+        }
+        
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('searchBtn').disabled = true;
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('searchBtn').disabled = false;
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+        
+        function hideResults() {
+            document.getElementById('results').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
