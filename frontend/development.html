@@ -495,6 +495,78 @@
             color: #333;
         }
         
+        .regulations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .regulation-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #ddd;
+            transition: all 0.3s ease;
+        }
+        
+        .regulation-card.eligible {
+            border-left-color: #28a745;
+            background: #f8fff9;
+        }
+        
+        .regulation-card.not-eligible {
+            border-left-color: #dc3545;
+            background: #fff8f8;
+        }
+        
+        .regulation-card.conditional {
+            border-left-color: #ffc107;
+            background: #fffdf0;
+        }
+        
+        .regulation-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .regulation-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .regulation-status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .regulation-status.eligible {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .regulation-status.not-eligible {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .regulation-status.conditional {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .regulation-description {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+        }
+        
         @media (max-width: 768px) {
             .scenario-grid {
                 grid-template-columns: 1fr;
@@ -537,6 +609,11 @@
         
         <div id="results" class="results" style="display: none;">
             <div class="property-summary" id="propertySummary"></div>
+            
+            <div class="section state-regulations">
+                <h2><span class="section-icon">🏛️</span>State Program Eligibility</h2>
+                <div id="stateRegulations" class="regulations-grid"></div>
+            </div>
             
             <div class="section base-zoning">
                 <h2><span class="section-icon">🏘️</span>Base Zoning Analysis</h2>
@@ -672,6 +749,9 @@
         function displayResults(data) {
             // Property Summary
             document.getElementById('propertySummary').textContent = data.property_summary;
+            
+            // State Regulations
+            displayStateRegulations(data.incentive_opportunities, data.base_zoning);
             
             // Base Zoning
             const baseZoning = data.base_zoning;
@@ -990,6 +1070,77 @@
         
         function hideResults() {
             document.getElementById('results').style.display = 'none';
+        }
+        
+        function displayStateRegulations(incentives, baseZoning) {
+            const container = document.getElementById('stateRegulations');
+            const regulations = [];
+            
+            // State Density Bonus
+            regulations.push({
+                name: 'State Density Bonus Law',
+                code: 'Gov Code 65915',
+                eligible: incentives.state_density_bonus,
+                description: incentives.state_density_bonus 
+                    ? `Available to multi-family zones (${baseZoning.zone}). Up to 35% density bonus for affordable housing.`
+                    : `Only available to multi-family zones (R2, R3, R4, R5). Current zone: ${baseZoning.zone}`
+            });
+            
+            // SB-9 (Duplex/Lot Split)
+            regulations.push({
+                name: 'SB-9 Duplex/Lot Split',
+                code: 'Gov Code 65852.21/66411.7',
+                eligible: incentives.sb9_eligible,
+                description: incentives.sb9_eligible 
+                    ? `Single-family zone (R1) allows duplex conversion${incentives.sb9_lot_split_eligible ? ' and lot splitting' : ''}.`
+                    : `Only available to single-family zones (R1). Current zone: ${baseZoning.zone}`
+            });
+            
+            // TOC
+            const tocStatus = incentives.toc_tier ? 'eligible' : 'conditional';
+            regulations.push({
+                name: 'Transit Oriented Communities (TOC)',
+                code: 'LAMC 12.22-A.31',
+                eligible: tocStatus,
+                description: incentives.toc_tier 
+                    ? `Property is in TOC Tier ${incentives.toc_tier} area. Up to ${getTocBonus(incentives.toc_tier)}% density bonus.`
+                    : 'Eligibility depends on proximity to major transit stops. Transit analysis required.'
+            });
+            
+            // AB 2097 (Parking Reduction)
+            regulations.push({
+                name: 'AB 2097 Parking Reduction',
+                code: 'Gov Code 65863.2',
+                eligible: incentives.ab2097_eligible ? 'eligible' : 'conditional',
+                description: 'Eliminates parking minimums within ½ mile of major transit. Transit proximity analysis required.'
+            });
+            
+            // ED-1 (100% Affordable)
+            regulations.push({
+                name: 'Executive Directive 1 (ED-1)',
+                code: 'LA Executive Directive',
+                eligible: incentives.ed1_eligible,
+                description: incentives.ed1_eligible 
+                    ? `Available to all residential zones (${baseZoning.zone}). Ministerial approval for 100% affordable housing.`
+                    : `Not available to non-residential zones. Current zone: ${baseZoning.zone}`
+            });
+            
+            container.innerHTML = regulations.map(reg => `
+                <div class="regulation-card ${reg.eligible === true ? 'eligible' : reg.eligible === 'conditional' ? 'conditional' : 'not-eligible'}">
+                    <div class="regulation-header">
+                        <div class="regulation-name">${reg.name}</div>
+                        <div class="regulation-status ${reg.eligible === true ? 'eligible' : reg.eligible === 'conditional' ? 'conditional' : 'not-eligible'}">
+                            ${reg.eligible === true ? 'Eligible' : reg.eligible === 'conditional' ? 'Conditional' : 'Not Eligible'}
+                        </div>
+                    </div>
+                    <div class="regulation-description">${reg.description}</div>
+                </div>
+            `).join('');
+        }
+        
+        function getTocBonus(tier) {
+            const bonuses = {1: 50, 2: 60, 3: 70, 4: 80};
+            return bonuses[tier] || 50;
         }
     </script>
 </body>

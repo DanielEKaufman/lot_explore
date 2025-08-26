@@ -146,7 +146,7 @@ class DevelopmentAnalyzer:
         next_steps = self._generate_next_steps(scenarios, constraints)
         
         # Property summary
-        summary = self._generate_property_summary(address, lot_area, base_zoning, existing_conditions)
+        summary = self._generate_property_summary(property_data, lot_area, base_zoning, existing_conditions)
         
         analysis = DevelopmentAnalysis(
             property_summary=summary,
@@ -496,7 +496,23 @@ class DevelopmentAnalyzer:
         
         return steps
     
-    def _generate_property_summary(self, address: str, lot_area: float, 
+    def _generate_property_summary(self, property_data: Dict, lot_area: float, 
                                  base: BaseZoning, existing: ExistingConditions) -> str:
-        """Generate property summary"""
-        return f"{address} • {lot_area:,.0f} sq ft lot • {base.complete_zone} zoning • {existing.units} existing units ({existing.year_built})"
+        """Generate property summary with APN and all addresses"""
+        apn = property_data.get('apn', '')
+        address = property_data.get('address', '')
+        all_addresses = property_data.get('all_addresses', [])
+        
+        # Format addresses display
+        if len(all_addresses) > 1:
+            addresses_text = f"{len(all_addresses)} addresses: {', '.join(all_addresses[:3])}"
+            if len(all_addresses) > 3:
+                addresses_text += f" (+{len(all_addresses) - 3} more)"
+        elif all_addresses:
+            addresses_text = all_addresses[0]
+        else:
+            addresses_text = address or "Address not available"
+        
+        year_text = f"({existing.year_built})" if existing.year_built else ""
+        
+        return f"APN {apn} • {addresses_text} • {lot_area:,.0f} sq ft lot • {base.complete_zone} zoning • {existing.units} existing units {year_text}".strip()

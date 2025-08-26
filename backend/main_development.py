@@ -72,15 +72,51 @@ async def query_county_parcel(apn: str) -> Optional[Dict]:
             if response.status_code == 200:
                 data = response.json()
                 if data.get("features") and len(data["features"]) > 0:
+                    # Get all addresses for this parcel
+                    all_addresses = await get_all_parcel_addresses(formatted_apn)
+                    
                     return {
                         "data": data["features"][0].get("attributes", {}),
                         "geometry": data["features"][0].get("geometry", {}),
+                        "all_addresses": all_addresses,
                         "source": "LA County Parcel Service"
                     }
         except Exception as e:
             print(f"County parcel error: {e}")
     
     return None
+
+async def get_all_parcel_addresses(apn: str) -> List[str]:
+    """Get all addresses associated with a parcel APN"""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        params = {
+            "where": f"AIN='{apn}' OR APN='{apn}'",
+            "outFields": "SitusAddress,SitusFullAddress",
+            "f": "json",
+            "returnGeometry": "false"
+        }
+        
+        try:
+            response = await client.get(COUNTY_PARCEL_URL, params=params)
+            if response.status_code == 200:
+                data = response.json()
+                addresses = set()  # Use set to avoid duplicates
+                
+                for feature in data.get("features", []):
+                    attrs = feature.get("attributes", {})
+                    situs_addr = attrs.get("SitusAddress", "").strip()
+                    full_addr = attrs.get("SitusFullAddress", "").strip()
+                    
+                    if situs_addr:
+                        addresses.add(situs_addr)
+                    if full_addr and full_addr != situs_addr:
+                        addresses.add(full_addr)
+                
+                return sorted(list(addresses))
+        except Exception as e:
+            print(f"Error fetching all addresses for APN {apn}: {e}")
+    
+    return []
 
 async def geocode_address(address: str) -> Optional[Dict]:
     """Geocode address using LA County services"""
@@ -137,6 +173,7 @@ def prepare_property_data(county_result: Dict) -> Dict:
     
     county_data = county_result.get("data", {})
     geometry = county_result.get("geometry", {})
+    all_addresses = county_result.get("all_addresses", [])
     
     # Basic property info
     apn = str(county_data.get("AIN") or county_data.get("APN") or "")
@@ -173,6 +210,7 @@ def prepare_property_data(county_result: Dict) -> Dict:
     return {
         'apn': apn,
         'address': address,
+        'all_addresses': all_addresses,
         'lot_area_sqft': float(lot_area) if lot_area else 0,
         'existing_units': int(existing_units) if existing_units else 0,
         'building_sf': float(building_sf) if building_sf else 0,
