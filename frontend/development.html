@@ -535,7 +535,7 @@
         
         .rules-header {
             display: grid;
-            grid-template-columns: 2fr 1fr 2fr;
+            grid-template-columns: 2fr 1fr 2fr 2fr;
             background: linear-gradient(135deg, #f8fafc, #e2e8f0);
             font-weight: 700;
             font-size: 14px;
@@ -546,12 +546,13 @@
         
         .rule-col,
         .status-col,
-        .effect-col {
+        .effect-col,
+        .enables-col {
             padding: 20px 24px;
             border-right: 1px solid #d1d5db;
         }
         
-        .effect-col {
+        .enables-col {
             border-right: none;
         }
         
@@ -562,7 +563,7 @@
         
         .rule-row {
             display: grid;
-            grid-template-columns: 2fr 1fr 2fr;
+            grid-template-columns: 2fr 1fr 2fr 2fr;
             border-bottom: 1px solid #f1f5f9;
             transition: background-color 0.2s ease;
         }
@@ -659,6 +660,7 @@
             .rule-col,
             .status-col,
             .effect-col,
+            .enables-col,
             .rule-cell {
                 border-right: none;
                 border-bottom: 1px solid #f1f5f9;
@@ -1009,6 +1011,7 @@
                     <div class="rule-col">Rule</div>
                     <div class="status-col">Status</div>
                     <div class="effect-col">Effect</div>
+                    <div class="enables-col">What It Enables</div>
                 </div>
                 <div id="rulesTableBody" class="rules-body">
                     <!-- Rules will be populated by JavaScript -->
@@ -1309,98 +1312,104 @@
                     citation: `LAMC 12.${data.base_zoning.zone.substring(1) || '07'}`,
                     status: 'applies',
                     statusText: 'Applies',
-                    effect: `Density factor 1/${data.base_zoning.density_factor}; base = ${Math.round(data.base_zoning.baseline_units)} units`
+                    effect: `${Math.round(data.base_zoning.baseline_units)} units baseline`,
+                    enables: 'Standard process • No bonus • Standard parking'
                 },
                 {
                     name: 'Height District',
                     citation: `LAMC 12.21.C`,
                     status: 'applies',
                     statusText: 'Applies',
-                    effect: `FAR ${data.base_zoning.far_limit}; height ${data.base_zoning.height_limit_ft} ft`
+                    effect: `${data.base_zoning.height_limit_ft}ft height, ${data.base_zoning.far_limit} FAR`,
+                    enables: 'Standard limits'
                 },
                 {
                     name: 'TOC (LAMC 12.22-A.31)',
                     citation: 'Measure JJJ',
                     status: data.incentive_opportunities.toc_tier ? 'eligible' : 'not-eligible',
-                    statusText: data.incentive_opportunities.toc_tier ? `Eligible Tier ${data.incentive_opportunities.toc_tier}` : 'Not Eligible',
-                    reason: data.incentive_opportunities.toc_tier ? '' : '> ½-mile from major transit',
-                    effect: data.incentive_opportunities.toc_tier ? `+${[50,60,70,80][data.incentive_opportunities.toc_tier-1] || 50}% density; 0.5 parking` : 'No density bonus available'
+                    statusText: data.incentive_opportunities.toc_tier ? 'Eligible' : 'Not Eligible',
+                    effect: data.incentive_opportunities.toc_tier ? `+${[50,60,70,80][data.incentive_opportunities.toc_tier-1] || 50}% density` : 'No bonus',
+                    enables: data.incentive_opportunities.toc_tier ? `Ministerial • +${[50,60,70,80][data.incentive_opportunities.toc_tier-1] || 50}% units • 50% less parking` : 'Not available'
                 },
                 {
                     name: 'State Density Bonus (GC 65915)',
                     citation: 'AB 2345',
                     status: data.incentive_opportunities.state_density_bonus ? 'eligible' : 'not-eligible',
                     statusText: data.incentive_opportunities.state_density_bonus ? 'Eligible' : 'Not Eligible',
-                    reason: data.incentive_opportunities.state_density_bonus ? '' : 'Single-family zones only',
-                    effect: data.incentive_opportunities.state_density_bonus ? '+50% density; 3 concessions' : 'No state density bonus'
+                    effect: data.incentive_opportunities.state_density_bonus ? '+50% density' : 'No bonus',
+                    enables: data.incentive_opportunities.state_density_bonus ? 'By-right • +50% units • 3 concessions • Less parking' : 'Not available'
                 },
                 {
                     name: 'ED-1 (Exec Dir 1)',
                     citation: 'LAMC 12.22-A.25',
                     status: data.incentive_opportunities.ed1_eligible ? 'eligible' : 'not-eligible',
                     statusText: data.incentive_opportunities.ed1_eligible ? 'Eligible' : 'Not Eligible',
-                    effect: data.incentive_opportunities.ed1_eligible ? '100% affordable; +80% or massing-limited' : 'Not available'
+                    effect: data.incentive_opportunities.ed1_eligible ? '+80% density' : 'Not available',
+                    enables: data.incentive_opportunities.ed1_eligible ? 'Ministerial • +80% units • Max envelope • Zero parking' : 'Not available'
                 },
                 {
                     name: 'SB-35 (GC 65913.4)',
                     citation: 'Gov Code 65913.4',
                     status: data.incentive_opportunities.sb35_eligible ? 'eligible' : 'not-eligible',
                     statusText: data.incentive_opportunities.sb35_eligible ? 'Eligible' : 'Not Eligible',
-                    effect: 'Tag: streamlined, CEQA-exempt (no extra density)'
+                    effect: 'Streamlined process',
+                    enables: data.incentive_opportunities.sb35_eligible ? 'Ministerial • CEQA-exempt • Same units' : 'Process only'
                 },
                 {
                     name: 'AB-1287 Enhanced DB',
                     citation: 'Gov Code 65915(f)(4)',
                     status: data.incentive_opportunities.ab1287_eligible ? 'eligible' : 'not-eligible',
                     statusText: data.incentive_opportunities.ab1287_eligible ? 'Eligible' : 'Not Eligible',
-                    effect: data.incentive_opportunities.ab1287_eligible ? 'DB % becomes up to 100%' : 'Not available'
+                    effect: data.incentive_opportunities.ab1287_eligible ? 'Up to +100% density' : 'Not available',
+                    enables: data.incentive_opportunities.ab1287_eligible ? 'By-right • Up to +100% units • Extra concessions' : 'Not available'
                 },
                 {
                     name: 'AB-2011',
                     citation: 'Gov Code 65913.4',
                     status: data.incentive_opportunities.ab2011_eligible ? 'eligible' : 'not-eligible',
                     statusText: data.incentive_opportunities.ab2011_eligible ? 'Eligible' : 'Not Eligible',
-                    reason: data.incentive_opportunities.ab2011_eligible ? '' : 'Commercial corridors only',
-                    effect: data.incentive_opportunities.ab2011_eligible ? 'Housing on commercial land' : 'Not applicable'
+                    effect: data.incentive_opportunities.ab2011_eligible ? 'Commercial to housing' : 'Not applicable',
+                    enables: data.incentive_opportunities.ab2011_eligible ? 'Ministerial • Commercial conversion' : 'Not available'
                 },
                 {
                     name: 'SB-4',
                     citation: 'Gov Code 65913.4',
                     status: data.incentive_opportunities.sb4_eligible ? 'eligible' : 'not-eligible',
                     statusText: data.incentive_opportunities.sb4_eligible ? 'Eligible' : 'Not Eligible',
-                    reason: data.incentive_opportunities.sb4_eligible ? '' : 'Faith-based/university ownership only',
-                    effect: data.incentive_opportunities.sb4_eligible ? 'Streamlined affordable housing' : 'Not applicable'
+                    effect: data.incentive_opportunities.sb4_eligible ? 'Affordable housing' : 'Not applicable',
+                    enables: data.incentive_opportunities.sb4_eligible ? 'Ministerial • 100% affordable • Zero parking' : 'Not available'
                 },
                 {
                     name: 'SB-9 (GC 65852.21)',
                     citation: 'Gov Code 65852.21',
                     status: data.incentive_opportunities.sb9_eligible ? 'eligible' : 'not-eligible',
                     statusText: data.incentive_opportunities.sb9_eligible ? 'Eligible' : 'Not Eligible',
-                    reason: data.incentive_opportunities.sb9_eligible ? '' : 'R1-only',
-                    effect: data.incentive_opportunities.sb9_eligible ? 'Duplex + lot split allowed' : 'Not applicable to multifamily zones'
+                    effect: data.incentive_opportunities.sb9_eligible ? 'Duplex + lot split' : 'Not applicable',
+                    enables: data.incentive_opportunities.sb9_eligible ? 'Ministerial • 2x units • Lot splitting' : 'Not available'
                 },
                 {
                     name: 'Builder\'s Remedy (HAA)',
                     citation: 'Gov Code 65589.5',
                     status: data.incentive_opportunities.sb330_eligible ? 'eligible' : 'not-eligible',
                     statusText: data.incentive_opportunities.sb330_eligible ? 'Not Active' : 'Not Active',
-                    reason: 'Dependent on Housing Element status',
-                    effect: 'Would override local zoning if activated'
+                    effect: 'Override local zoning',
+                    enables: 'Ministerial • Override zoning • Higher density'
                 },
                 {
                     name: 'SB-684/SB-1123',
                     citation: 'Gov Code 65913.5',
                     status: data.incentive_opportunities.sb684_eligible ? 'eligible' : 'not-eligible',
                     statusText: data.incentive_opportunities.sb684_eligible ? 'Eligible' : 'Not Eligible',
-                    effect: 'Tag: ministerial subdivision; no single-lot density lift'
+                    effect: 'Ministerial subdivision',
+                    enables: data.incentive_opportunities.sb684_eligible ? '60-day approval • CEQA-exempt' : 'Process only'
                 },
                 {
                     name: 'AB-2097 (parking)',
                     citation: 'Gov Code 65863.2',
                     status: 'unknown',
                     statusText: 'Unknown',
-                    reason: 'Verify transit distance',
-                    effect: '≤½-mile MTS → 0 required parking'
+                    effect: 'Zero parking near transit',
+                    enables: 'Zero parking required'
                 }
             ];
             
@@ -1414,10 +1423,12 @@
                     </div>
                     <div class="rule-cell">
                         <span class="status-badge ${rule.status}">${rule.statusText}</span>
-                        ${rule.reason ? `<div style="font-size: 11px; color: #6b7280; margin-top: 4px;">${rule.reason}</div>` : ''}
                     </div>
                     <div class="rule-cell">
                         <div class="effect-text">${rule.effect}</div>
+                    </div>
+                    <div class="rule-cell">
+                        <div class="enables-text" style="color: #059669; font-weight: 500; font-size: 13px;">${rule.enables}</div>
                     </div>
                 </div>
             `).join('');
