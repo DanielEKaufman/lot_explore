@@ -322,6 +322,8 @@ MIT License - See LICENSE file for details
 
 ## 🤝 Contributing
 
+**Repository**: [https://github.com/DanielEKaufman/lot_explore](https://github.com/DanielEKaufman/lot_explore)
+
 This project was developed with Claude Code. Contributions welcome via issues and pull requests.
 
 ---
