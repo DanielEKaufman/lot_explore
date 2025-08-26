@@ -146,21 +146,27 @@
             margin: 20px;
         }
         
-        /* Current Units Display */
-        .current-units-section {
-            padding: 30px;
-            text-align: center;
+        /* Property Overview Section */
+        .property-overview-section {
+            padding: 40px;
             border-bottom: 1px solid #e9ecef;
             display: none;
+        }
+        
+        .property-overview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+            max-width: 1000px;
+            margin: 0 auto;
         }
         
         .current-units-card {
             background: linear-gradient(135deg, #f8f9fa, #e9ecef);
             border-radius: 16px;
             padding: 25px;
-            max-width: 250px;
-            margin: 0 auto;
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            text-align: center;
         }
         
         .current-units-label {
@@ -185,10 +191,485 @@
             color: #9ca3af;
         }
         
-        /* Recommendations Table */
-        .recommendations-section {
-            padding: 40px;
+        .property-details-card {
+            background: linear-gradient(135deg, #ffffff, #f8fafc);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        .property-details-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .property-detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .property-detail-item:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-label {
+            font-size: 13px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        .detail-value {
+            font-size: 13px;
+            color: #374151;
+            font-weight: 600;
+        }
+        
+        .map-card {
+            background: linear-gradient(135deg, #ffffff, #f8fafc);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            position: relative;
+        }
+        
+        .map-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .map-container {
+            width: 100%;
+            height: 200px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .map-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .map-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .expand-map-btn {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.9);
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #374151;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+        
+        .expand-map-btn:hover {
+            background: white;
+            transform: translateY(-1px);
+        }
+        
+        /* Expanded Map Modal */
+        .map-modal {
             display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+        }
+        
+        .map-modal-content {
+            position: absolute;
+            top: 5%;
+            left: 5%;
+            width: 90%;
+            height: 90%;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        
+        .map-modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .map-modal iframe {
+            width: 100%;
+            height: calc(100% - 80px);
+            border: none;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 4px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .property-overview-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .map-modal-content {
+                top: 2%;
+                left: 2%;
+                width: 96%;
+                height: 96%;
+            }
+        }
+        
+        /* Hero Recommendations Section */
+        .hero-recommendations-section {
+            padding: 50px 40px;
+            background: linear-gradient(135deg, #f8fafc, #ffffff);
+            border-bottom: 1px solid #e5e7eb;
+            display: none;
+        }
+        
+        .hero-title {
+            font-size: 36px;
+            font-weight: 800;
+            color: #1f2937;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        
+        .hero-subtitle {
+            font-size: 18px;
+            color: #6b7280;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .hero-cards-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .hero-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fffe 100%);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .hero-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #10b981, #34d399);
+            border-radius: 20px 20px 0 0;
+        }
+        
+        .hero-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+        
+        
+        
+        .units-number {
+            display: block;
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1;
+            margin: 15px 0;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .complexity-number {
+            display: block;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1;
+            margin-bottom: 4px;
+            color: #059669;
+        }
+        
+        .units-number {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .complexity-number {
+            background: linear-gradient(135deg, #059669, #047857);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        
+        
+        .rationale {
+            font-size: 15px;
+            color: #4b5563;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            padding: 18px;
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border-radius: 12px;
+            border: 1px solid #bae6fd;
+        }
+        
+        .math-box {
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            border: 2px solid #10b981;
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .math-content {
+            font-family: 'SF Mono', Monaco, monospace;
+            background: rgba(255,255,255,0.8);
+            padding: 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.7;
+            color: #374151;
+            white-space: pre-line;
+        }
+        
+        
+        /* Math Modal */
+        .math-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+        }
+        
+        .math-modal-content {
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            width: 80%;
+            max-height: 80%;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        
+        .math-modal-header {
+            padding: 24px 30px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+        }
+        
+        .math-modal-body {
+            padding: 30px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        /* Rules Audit Section */
+        .rules-audit-section {
+            padding: 50px 40px;
+            display: none;
+        }
+        
+        .rules-table {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .rules-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 2fr;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            font-weight: 700;
+            font-size: 14px;
+            color: #374151;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .rule-col,
+        .status-col,
+        .effect-col {
+            padding: 20px 24px;
+            border-right: 1px solid #d1d5db;
+        }
+        
+        .effect-col {
+            border-right: none;
+        }
+        
+        .rules-body {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .rule-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 2fr;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s ease;
+        }
+        
+        .rule-row:hover {
+            background: #f9fafb;
+        }
+        
+        .rule-row:last-child {
+            border-bottom: none;
+        }
+        
+        .rule-cell {
+            padding: 16px 24px;
+            font-size: 14px;
+            border-right: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+        }
+        
+        .rule-cell:last-child {
+            border-right: none;
+        }
+        
+        .rule-name {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .rule-citation {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-badge.applies {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-badge.eligible {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .status-badge.not-eligible {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+        
+        .status-badge.unknown {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .effect-text {
+            color: #374151;
+            line-height: 1.4;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero-cards-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .headline-metrics {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .delta-metrics {
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+            
+            .rules-header,
+            .rule-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .rule-col,
+            .status-col,
+            .effect-col,
+            .rule-cell {
+                border-right: none;
+                border-bottom: 1px solid #f1f5f9;
+            }
+            
+            .math-modal-content {
+                top: 5%;
+                left: 5%;
+                width: 90%;
+                max-height: 90%;
+            }
         }
         
         .section-title {
@@ -379,28 +860,158 @@
         
         <div id="error" class="error"></div>
         
-        <!-- Current Units Display -->
-        <div id="currentUnitsDisplay" class="current-units-section">
-            <div class="current-units-card">
-                <div class="current-units-label">Current Units</div>
-                <div id="currentUnitsNumber" class="current-units-number">2</div>
-                <div id="currentUnitsYear" class="current-units-year">Built in 1923</div>
+        <!-- Property Overview -->
+        <div id="propertyOverview" class="property-overview-section">
+            <div class="property-overview-grid">
+                <!-- Current Units Card -->
+                <div class="current-units-card">
+                    <div class="current-units-label">Current Units</div>
+                    <div id="currentUnitsNumber" class="current-units-number">2</div>
+                    <div id="currentUnitsYear" class="current-units-year">Built in 1923</div>
+                </div>
+                
+                <!-- Property Details Card -->
+                <div class="property-details-card">
+                    <div class="property-details-title">
+                        🏠 Property Details
+                    </div>
+                    <div id="propertyDetailsContent">
+                        <div class="property-detail-item">
+                            <span class="detail-label">APN</span>
+                            <span class="detail-value" id="propertyAPN">5523-024-013</span>
+                        </div>
+                        <div class="property-detail-item">
+                            <span class="detail-label">Lot Size</span>
+                            <span class="detail-value" id="propertyLotSize">5,085 sq ft</span>
+                        </div>
+                        <div class="property-detail-item">
+                            <span class="detail-label">Zoning</span>
+                            <span class="detail-value" id="propertyZoning">R3-1</span>
+                        </div>
+                        <div class="property-detail-item">
+                            <span class="detail-label">Building SF</span>
+                            <span class="detail-value" id="propertyBuildingSF">2,572 sq ft</span>
+                        </div>
+                        <div class="property-detail-item">
+                            <span class="detail-label">Neighborhood</span>
+                            <span class="detail-value" id="propertyNeighborhood">Greater Wilshire</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Map Card -->
+                <div class="map-card">
+                    <div class="map-title">
+                        📍 Location
+                    </div>
+                    <div class="map-container" onclick="expandMap()">
+                        <iframe 
+                            id="mapFrame"
+                            src=""
+                            loading="lazy"
+                            referrerpolicy="no-referrer-when-downgrade">
+                        </iframe>
+                        <div class="expand-map-btn">🔍 Expand</div>
+                    </div>
+                </div>
             </div>
         </div>
         
-        <!-- Recommendations Table -->
-        <div id="recommendationsSection" class="recommendations-section">
-            <h2 class="section-title">🏆 Development Recommendations</h2>
-            <p class="section-description">Here's what you can build on this property:</p>
-            
-            <div class="recommendations-table">
-                <div class="table-header">
-                    <div class="header-cell by-right">⚖️ By-Right</div>
-                    <div class="header-cell better">🥇 Better Option</div>
-                    <div class="header-cell better">🥈 Best Alternative</div>
+        <!-- Expanded Map Modal -->
+        <div id="mapModal" class="map-modal">
+            <div class="map-modal-content">
+                <div class="map-modal-header">
+                    <h3 id="modalMapTitle">Property Location</h3>
+                    <button class="close-modal" onclick="closeMap()">&times;</button>
                 </div>
-                <div class="table-body" id="tableBody">
-                    <!-- Content will be populated by JavaScript -->
+                <iframe 
+                    id="modalMapFrame"
+                    src=""
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
+            </div>
+        </div>
+        
+        <!-- Hero Recommendations Section -->
+        <div id="heroRecommendations" class="hero-recommendations-section">
+            <h2 class="hero-title">What Should You Build?</h2>
+            <p class="hero-subtitle">Maximize units with the simplest development paths</p>
+            
+            <div class="hero-cards-container">
+                <div class="hero-card good-card" id="goodCard">
+                    <h3 style="color: #1f2937; font-weight: 600; margin-bottom: 10px;">🥇 BEST: By-Right</h3>
+                    <div class="units-number">6</div>
+                    <p style="color: #6b7280; margin: 10px 0;">+4 new units from current 2</p>
+                    <div class="rationale">💡 By-right development under base zoning</div>
+                    
+                    <div class="math-box">
+                        <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                            <span style="font-size: 24px; margin-right: 12px;">🧮</span>
+                            <strong style="color: #064e3b; font-size: 17px; font-weight: 600;">How We Calculate 6 Units</strong>
+                        </div>
+                        <div class="math-content">Calculation details loading...</div>
+                    </div>
+                </div>
+                
+                <div class="hero-card better-card" id="betterCard">
+                    <h3 style="color: #1f2937; font-weight: 600; margin-bottom: 10px;">🥈 ALT: Moderate Option</h3>
+                    <div class="units-number">8</div>
+                    <p style="color: #6b7280; margin: 10px 0;">+6 new units from current 2</p>
+                    <div class="rationale">💡 Alternative development path</div>
+                    
+                    <div class="math-box">
+                        <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                            <span style="font-size: 24px; margin-right: 12px;">🧮</span>
+                            <strong style="color: #064e3b; font-size: 17px; font-weight: 600;">How We Calculate 8 Units</strong>
+                        </div>
+                        <div class="math-content">Calculation details loading...</div>
+                    </div>
+                </div>
+                
+                <div class="hero-card best-card" id="bestCard">
+                    <h3 style="color: #1f2937; font-weight: 600; margin-bottom: 10px;">🥉 MAX: Maximum Units</h3>
+                    <div class="units-number">13</div>
+                    <p style="color: #6b7280; margin: 10px 0;">+11 new units from current 2</p>
+                    <div class="rationale">💡 Maximum development potential</div>
+                    
+                    <div class="math-box">
+                        <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                            <span style="font-size: 24px; margin-right: 12px;">🧮</span>
+                            <strong style="color: #064e3b; font-size: 17px; font-weight: 600;">How We Calculate 13 Units</strong>
+                        </div>
+                        <div class="math-content">Calculation details loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Math Drawer Modal -->
+        <div id="mathModal" class="math-modal">
+            <div class="math-modal-content">
+                <div class="math-modal-header">
+                    <h3 id="mathModalTitle">Development Math</h3>
+                    <button class="close-modal" onclick="closeMathModal()">&times;</button>
+                </div>
+                <div id="mathModalBody" class="math-modal-body">
+                    <!-- Math content will be populated here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Full Rules Audit Section -->
+        <div id="rulesAuditSection" class="rules-audit-section">
+            <h2 class="section-title">📋 Complete Rules Audit</h2>
+            <p class="section-description">Every regulation that applies to this property</p>
+            
+            <div class="rules-table">
+                <div class="rules-header">
+                    <div class="rule-col">Rule</div>
+                    <div class="status-col">Status</div>
+                    <div class="effect-col">Effect</div>
+                </div>
+                <div id="rulesTableBody" class="rules-body">
+                    <!-- Rules will be populated by JavaScript -->
                 </div>
             </div>
         </div>
@@ -462,32 +1073,185 @@
         }
         
         function displayResults(data) {
-            // Show current units display
-            document.getElementById('currentUnitsDisplay').style.display = 'block';
+            // Show property overview section
+            document.getElementById('propertyOverview').style.display = 'block';
+            
+            // Populate current units
             document.getElementById('currentUnitsNumber').textContent = data.existing_conditions.units;
             document.getElementById('currentUnitsYear').textContent = `Built in ${data.existing_conditions.year_built || 'Unknown'}`;
             
-            // Show recommendations section
-            document.getElementById('recommendationsSection').style.display = 'block';
+            // Populate property details
+            populatePropertyDetails(data);
             
-            // Find scenarios
-            const byRightScenario = data.development_scenarios.find(s => s.name === 'By-Right');
-            const nonByRightScenarios = data.development_scenarios.filter(s => s.name !== 'By-Right');
-            const top2 = nonByRightScenarios.slice(0, 2);
+            // Setup Google Map
+            setupGoogleMap(data);
             
-            // Populate table
-            const tableBody = document.getElementById('tableBody');
-            tableBody.innerHTML = `
-                <div class="table-cell">
-                    ${createCellContent(byRightScenario, data)}
-                </div>
-                <div class="table-cell">
-                    ${createCellContent(top2[0], data)}
-                </div>
-                <div class="table-cell">
-                    ${createCellContent(top2[1], data)}
-                </div>
-            `;
+            // Enrich scenarios with complexity and timeline data
+            const enrichedScenarios = enrichScenariosWithComplexity(data);
+            
+            // Show hero recommendations
+            document.getElementById('heroRecommendations').style.display = 'block';
+            populateHeroCards(enrichedScenarios, data);
+            
+            // Show rules audit
+            document.getElementById('rulesAuditSection').style.display = 'block';
+            populateRulesAudit(data);
+            
+            // Store data globally for modals
+            window.currentAnalysis = { data, enrichedScenarios };
+        }
+        
+        function enrichScenariosWithComplexity(data) {
+            return data.development_scenarios.map(scenario => {
+                // Calculate complexity score based on requirements
+                let complexity = 'Easy';
+                let timelineMonths = 6;
+                
+                // Affordability complexity
+                if (scenario.affordability_required !== 'None') {
+                    if (scenario.affordability_required.includes('100%')) {
+                        complexity = 'Complex';
+                        timelineMonths += 8;
+                    } else {
+                        complexity = 'Moderate';
+                        timelineMonths += 4;
+                    }
+                }
+                
+                // Approval path complexity
+                if (scenario.approval_path.includes('CPC') || scenario.approval_path.includes('hearing')) {
+                    complexity = 'Complex';
+                    timelineMonths += 6;
+                } else if (!scenario.approval_path.includes('Ministerial') && !scenario.approval_path.includes('Administrative')) {
+                    complexity = 'Moderate';
+                    timelineMonths += 3;
+                }
+                
+                // Feasibility adjustment
+                if (scenario.feasibility.includes('Medium')) {
+                    timelineMonths += 2;
+                    if (complexity === 'Easy') complexity = 'Moderate';
+                } else if (scenario.feasibility.includes('Low')) {
+                    timelineMonths += 4;
+                    complexity = 'Complex';
+                }
+                
+                // Use backend score if available, otherwise calculate simple score
+                let totalScore = scenario.recommendation_score || 0;
+                if (!totalScore) {
+                    // Simple scoring: units + feasibility + simplicity
+                    const baseUnits = data.base_zoning.baseline_units || 6;
+                    const unitMultiplier = scenario.total_units / baseUnits;
+                    totalScore = unitMultiplier * 3;
+                    
+                    if (scenario.feasibility.includes('High')) totalScore += 3;
+                    else if (scenario.feasibility.includes('Medium')) totalScore += 2;
+                    else totalScore += 1;
+                    
+                    if (complexity === 'Easy') totalScore += 2;
+                    else if (complexity === 'Moderate') totalScore += 1;
+                }
+                
+                return {
+                    ...scenario,
+                    complexity,
+                    timelineMonths,
+                    totalScore: Math.round(totalScore)
+                };
+            });
+        }
+        
+        function populateHeroCards(scenarios, data) {
+            // Sort scenarios by total units (ascending) to get distinct unit counts
+            const sortedByUnits = [...scenarios].sort((a, b) => a.total_units - b.total_units);
+            
+            // Take up to 3 scenarios with different unit counts
+            const uniqueScenarios = [];
+            const seenUnitCounts = new Set();
+            
+            for (const scenario of sortedByUnits) {
+                const unitCount = Math.round(scenario.total_units);
+                if (!seenUnitCounts.has(unitCount) && uniqueScenarios.length < 3) {
+                    uniqueScenarios.push(scenario);
+                    seenUnitCounts.add(unitCount);
+                }
+            }
+            
+            // Fill with By-Right if we don't have 3 unique scenarios
+            if (uniqueScenarios.length < 3) {
+                const byRight = scenarios.find(s => s.name === 'By-Right');
+                if (byRight && !uniqueScenarios.includes(byRight)) {
+                    uniqueScenarios.unshift(byRight);
+                }
+            }
+            
+            // Ensure we have exactly 3 scenarios, pad with highest unit scenarios if needed
+            while (uniqueScenarios.length < 3) {
+                const remaining = scenarios.filter(s => !uniqueScenarios.includes(s));
+                if (remaining.length > 0) {
+                    uniqueScenarios.push(remaining[0]);
+                } else {
+                    break;
+                }
+            }
+            
+            // Populate cards with the three distinct scenarios
+            const labels = ['Good', 'Better', 'Best'];
+            for (let i = 0; i < 3 && i < uniqueScenarios.length; i++) {
+                const cardId = ['goodCard', 'betterCard', 'bestCard'][i];
+                populateHeroCard(cardId, uniqueScenarios[i], uniqueScenarios[0], labels[i]);
+            }
+        }
+        
+        function populateHeroCard(cardId, scenario, baseline, rank) {
+            if (!scenario) return;
+            
+            const card = document.getElementById(cardId);
+            const unitsDelta = Math.round(scenario.total_units - 2); // Delta from current 2 units
+            
+            // Update title
+            const badges = {'Good': '🥇 BEST', 'Better': '🥈 ALT', 'Best': '🥉 MAX'};
+            const title = card.querySelector('h3');
+            if (title) {
+                title.textContent = `${badges[rank] || '🏆'}: ${scenario.name}`;
+            }
+            
+            // Update units number
+            card.querySelector('.units-number').textContent = Math.round(scenario.total_units);
+            
+            // Update unit delta description
+            const deltaText = card.querySelector('p');
+            if (deltaText) {
+                deltaText.textContent = `+${unitsDelta} new units from current 2`;
+            }
+            
+            // Update rationale
+            let rationale = scenario.recommendation_reason || scenario.description || 'Standard development path';
+            if (rationale.startsWith('UNLOCK:')) {
+                rationale = rationale.substring(7).trim(); // Remove 'UNLOCK:' prefix
+            }
+            if (rationale.startsWith('Recommended because of')) {
+                // Extract the key benefits from the recommendation
+                const parts = rationale.split(', ');
+                if (parts.length > 1) {
+                    rationale = `${parts[1].charAt(0).toUpperCase() + parts[1].slice(1)} path with ${parts[2] || 'good potential'}`;
+                }
+            }
+            const rationaleDiv = card.querySelector('.rationale');
+            if (rationaleDiv) {
+                rationaleDiv.innerHTML = `💡 ${rationale}`;
+            }
+            
+            // Update math content
+            const mathContent = card.querySelector('.math-content');
+            if (mathContent && scenario.unit_calculation_justification) {
+                mathContent.textContent = scenario.unit_calculation_justification;
+            } else if (mathContent) {
+                mathContent.textContent = 'Calculation details not available';
+            }
+            
+            // Store scenario data on card for math modal
+            card.dataset.scenarioId = scenario.name;
         }
         
         function createCellContent(scenario, data) {
@@ -543,8 +1307,264 @@
         }
         
         function hideResults() {
-            document.getElementById('currentUnitsDisplay').style.display = 'none';
-            document.getElementById('recommendationsSection').style.display = 'none';
+            document.getElementById('propertyOverview').style.display = 'none';
+            document.getElementById('heroRecommendations').style.display = 'none';
+            document.getElementById('rulesAuditSection').style.display = 'none';
+        }
+        
+        function populateRulesAudit(data) {
+            const rulesTableBody = document.getElementById('rulesTableBody');
+            const rules = [
+                {
+                    name: 'By-Right',
+                    citation: `LAMC 12.${data.base_zoning.zone.substring(1) || '07'}`,
+                    status: 'applies',
+                    statusText: 'Applies',
+                    effect: `Density factor 1/${data.base_zoning.density_factor}; base = ${Math.round(data.base_zoning.baseline_units)} units`
+                },
+                {
+                    name: 'Height District',
+                    citation: `LAMC 12.21.C`,
+                    status: 'applies',
+                    statusText: 'Applies',
+                    effect: `FAR ${data.base_zoning.far_limit}; height ${data.base_zoning.height_limit_ft} ft`
+                },
+                {
+                    name: 'TOC (LAMC 12.22-A.31)',
+                    citation: 'Measure JJJ',
+                    status: data.incentive_opportunities.toc_tier ? 'eligible' : 'not-eligible',
+                    statusText: data.incentive_opportunities.toc_tier ? `Eligible Tier ${data.incentive_opportunities.toc_tier}` : 'Not Eligible',
+                    reason: data.incentive_opportunities.toc_tier ? '' : '> ½-mile from major transit',
+                    effect: data.incentive_opportunities.toc_tier ? `+${[50,60,70,80][data.incentive_opportunities.toc_tier-1] || 50}% density; 0.5 parking` : 'No density bonus available'
+                },
+                {
+                    name: 'State Density Bonus (GC 65915)',
+                    citation: 'AB 2345',
+                    status: data.incentive_opportunities.state_density_bonus ? 'eligible' : 'not-eligible',
+                    statusText: data.incentive_opportunities.state_density_bonus ? 'Eligible' : 'Not Eligible',
+                    reason: data.incentive_opportunities.state_density_bonus ? '' : 'Single-family zones only',
+                    effect: data.incentive_opportunities.state_density_bonus ? '+50% density; 3 concessions' : 'No state density bonus'
+                },
+                {
+                    name: 'ED-1 (Exec Dir 1)',
+                    citation: 'LAMC 12.22-A.25',
+                    status: data.incentive_opportunities.ed1_eligible ? 'eligible' : 'not-eligible',
+                    statusText: data.incentive_opportunities.ed1_eligible ? 'Eligible' : 'Not Eligible',
+                    effect: data.incentive_opportunities.ed1_eligible ? '100% affordable; +80% or massing-limited' : 'Not available'
+                },
+                {
+                    name: 'SB-35 (GC 65913.4)',
+                    citation: 'Gov Code 65913.4',
+                    status: data.incentive_opportunities.sb35_eligible ? 'eligible' : 'not-eligible',
+                    statusText: data.incentive_opportunities.sb35_eligible ? 'Eligible' : 'Not Eligible',
+                    effect: 'Tag: streamlined, CEQA-exempt (no extra density)'
+                },
+                {
+                    name: 'AB-1287 Enhanced DB',
+                    citation: 'Gov Code 65915(f)(4)',
+                    status: data.incentive_opportunities.ab1287_eligible ? 'eligible' : 'not-eligible',
+                    statusText: data.incentive_opportunities.ab1287_eligible ? 'Eligible' : 'Not Eligible',
+                    effect: data.incentive_opportunities.ab1287_eligible ? 'DB % becomes up to 100%' : 'Not available'
+                },
+                {
+                    name: 'AB-2011',
+                    citation: 'Gov Code 65913.4',
+                    status: data.incentive_opportunities.ab2011_eligible ? 'eligible' : 'not-eligible',
+                    statusText: data.incentive_opportunities.ab2011_eligible ? 'Eligible' : 'Not Eligible',
+                    reason: data.incentive_opportunities.ab2011_eligible ? '' : 'Commercial corridors only',
+                    effect: data.incentive_opportunities.ab2011_eligible ? 'Housing on commercial land' : 'Not applicable'
+                },
+                {
+                    name: 'SB-4',
+                    citation: 'Gov Code 65913.4',
+                    status: data.incentive_opportunities.sb4_eligible ? 'eligible' : 'not-eligible',
+                    statusText: data.incentive_opportunities.sb4_eligible ? 'Eligible' : 'Not Eligible',
+                    reason: data.incentive_opportunities.sb4_eligible ? '' : 'Faith-based/university ownership only',
+                    effect: data.incentive_opportunities.sb4_eligible ? 'Streamlined affordable housing' : 'Not applicable'
+                },
+                {
+                    name: 'SB-9 (GC 65852.21)',
+                    citation: 'Gov Code 65852.21',
+                    status: data.incentive_opportunities.sb9_eligible ? 'eligible' : 'not-eligible',
+                    statusText: data.incentive_opportunities.sb9_eligible ? 'Eligible' : 'Not Eligible',
+                    reason: data.incentive_opportunities.sb9_eligible ? '' : 'R1-only',
+                    effect: data.incentive_opportunities.sb9_eligible ? 'Duplex + lot split allowed' : 'Not applicable to multifamily zones'
+                },
+                {
+                    name: 'Builder\'s Remedy (HAA)',
+                    citation: 'Gov Code 65589.5',
+                    status: data.incentive_opportunities.sb330_eligible ? 'eligible' : 'not-eligible',
+                    statusText: data.incentive_opportunities.sb330_eligible ? 'Not Active' : 'Not Active',
+                    reason: 'Dependent on Housing Element status',
+                    effect: 'Would override local zoning if activated'
+                },
+                {
+                    name: 'SB-684/SB-1123',
+                    citation: 'Gov Code 65913.5',
+                    status: data.incentive_opportunities.sb684_eligible ? 'eligible' : 'not-eligible',
+                    statusText: data.incentive_opportunities.sb684_eligible ? 'Eligible' : 'Not Eligible',
+                    effect: 'Tag: ministerial subdivision; no single-lot density lift'
+                },
+                {
+                    name: 'AB-2097 (parking)',
+                    citation: 'Gov Code 65863.2',
+                    status: 'unknown',
+                    statusText: 'Unknown',
+                    reason: 'Verify transit distance',
+                    effect: '≤½-mile MTS → 0 required parking'
+                }
+            ];
+            
+            rulesTableBody.innerHTML = rules.map(rule => `
+                <div class="rule-row">
+                    <div class="rule-cell">
+                        <div>
+                            <div class="rule-name">${rule.name}</div>
+                            <div class="rule-citation">${rule.citation}</div>
+                        </div>
+                    </div>
+                    <div class="rule-cell">
+                        <span class="status-badge ${rule.status}">${rule.statusText}</span>
+                        ${rule.reason ? `<div style="font-size: 11px; color: #6b7280; margin-top: 4px;">${rule.reason}</div>` : ''}
+                    </div>
+                    <div class="rule-cell">
+                        <div class="effect-text">${rule.effect}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function viewMath(cardType) {
+            const analysis = window.currentAnalysis;
+            if (!analysis) return;
+            
+            const card = document.getElementById(`${cardType}Card`);
+            const scenarioName = card.dataset.scenarioId;
+            const scenario = analysis.enrichedScenarios.find(s => s.name === scenarioName);
+            
+            if (!scenario) return;
+            
+            const modal = document.getElementById('mathModal');
+            const title = document.getElementById('mathModalTitle');
+            const body = document.getElementById('mathModalBody');
+            
+            title.textContent = `${scenario.name} - Development Math`;
+            
+            body.innerHTML = `
+                <div style="font-family: 'SF Mono', Monaco, monospace; background: #f8fafc; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 15px; color: #374151;">📐 Unit Calculation</h4>
+                    <div style="font-size: 13px; line-height: 1.6; color: #4b5563;">
+                        ${scenario.unit_calculation_justification || 'Calculation details not available'}
+                    </div>
+                </div>
+                
+                <div style="background: #ecfdf5; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #10b981;">
+                    <h4 style="margin-bottom: 15px; color: #374151;">⚡ Development Path</h4>
+                    <div style="font-size: 14px; line-height: 1.6; color: #4b5563;">
+                        <strong>Total Units:</strong> ${Math.round(scenario.total_units)} units<br>
+                        <strong>Complexity:</strong> ${scenario.complexity || 'Easy'} to build<br>
+                        <strong>Timeline:</strong> ${scenario.timelineMonths || 6}-${(scenario.timelineMonths || 6) + 6} months<br>
+                        <strong>Key Requirements:</strong> ${scenario.affordability_required}<br>
+                        <strong>Approval Process:</strong> ${scenario.approval_path}
+                    </div>
+                </div>
+                
+                <div style="background: #fef3c7; padding: 20px; border-radius: 10px;">
+                    <h4 style="margin-bottom: 15px; color: #374151;">📋 Key Benefits & Constraints</h4>
+                    <div style="font-size: 14px; line-height: 1.6; color: #4b5563;">
+                        <strong>Feasibility:</strong> ${scenario.feasibility}<br>
+                        <strong>Key Benefits:</strong> ${(scenario.key_benefits || []).slice(0, 3).join(', ')}<br>
+                        <strong>Main Constraints:</strong> ${(scenario.constraints || []).slice(0, 2).join(', ')}<br>
+                        <strong>Recommendation Score:</strong> ${scenario.totalScore} points
+                    </div>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeMathModal() {
+            document.getElementById('mathModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+        
+        function downloadPacket(cardType) {
+            // Placeholder for download functionality
+            alert(`Download packet for ${cardType} scenario - Coming soon!`);
+        }
+        
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const mapModal = document.getElementById('mapModal');
+            const mathModal = document.getElementById('mathModal');
+            
+            if (event.target === mapModal) {
+                closeMap();
+            } else if (event.target === mathModal) {
+                closeMathModal();
+            }
+        }
+        
+        function populatePropertyDetails(data) {
+            // Extract property data from the response
+            const summary = data.property_summary || '';
+            const baseZoning = data.base_zoning || {};
+            const existing = data.existing_conditions || {};
+            const neighborhood = data.zimas_data?.jurisdictional?.['Certified Neighborhood Councils']?.NC_NAME || 'N/A';
+            
+            // Parse APN from summary
+            const apnMatch = summary.match(/APN\s+([^\s•]+)/);
+            const apn = apnMatch ? apnMatch[1] : 'N/A';
+            
+            // Parse lot size from summary
+            const lotSizeMatch = summary.match(/(\d{1,3}(?:,\d{3})*)\s+sq\s+ft\s+lot/);
+            const lotSize = lotSizeMatch ? `${lotSizeMatch[1]} sq ft` : 'N/A';
+            
+            // Update property details
+            document.getElementById('propertyAPN').textContent = apn;
+            document.getElementById('propertyLotSize').textContent = lotSize;
+            document.getElementById('propertyZoning').textContent = baseZoning.complete_zone || 'N/A';
+            document.getElementById('propertyBuildingSF').textContent = existing.building_sf ? `${Math.round(existing.building_sf).toLocaleString()} sq ft` : 'N/A';
+            document.getElementById('propertyNeighborhood').textContent = neighborhood;
+        }
+        
+        function setupGoogleMap(data) {
+            // Extract address from the API call or use a fallback
+            const address = document.getElementById('addressInput').value.trim();
+            const encodedAddress = encodeURIComponent(address);
+            
+            // Google Maps embed URL
+            const mapUrl = `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dQWTz-sZhMW8V0&q=${encodedAddress}`;
+            
+            // Note: You'll need to replace the API key above with a real Google Maps API key
+            // For now, we'll use a simple Google Maps search URL
+            const simpleMapUrl = `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3304.123456789!2d-118.123456!3d34.123456!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2s${encodedAddress}!5e0!3m2!1sen!2sus!4v1234567890`;
+            
+            // Use a fallback that works without API key - Google Maps search
+            const fallbackMapUrl = `https://maps.google.com/maps?q=${encodedAddress}&t=&z=17&ie=UTF8&iwloc=&output=embed`;
+            
+            document.getElementById('mapFrame').src = fallbackMapUrl;
+            document.getElementById('modalMapFrame').src = fallbackMapUrl;
+            document.getElementById('modalMapTitle').textContent = `Location: ${address}`;
+        }
+        
+        function expandMap() {
+            document.getElementById('mapModal').style.display = 'block';
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+        
+        function closeMap() {
+            document.getElementById('mapModal').style.display = 'none';
+            document.body.style.overflow = 'auto'; // Restore scrolling
+        }
+        
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('mapModal');
+            if (event.target === modal) {
+                closeMap();
+            }
         }
     </script>
 </body>

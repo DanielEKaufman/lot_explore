@@ -170,6 +170,11 @@ class DevelopmentAnalyzer:
         scenarios = self._generate_scenarios(
             base_zoning, existing_conditions, incentives, constraints, lot_area
         )
+        # Consolidate scenarios with same unit count
+        scenarios = self._consolidate_scenarios(scenarios)
+        
+        # Score and rank scenarios
+        scenarios = self._score_scenarios(scenarios, base_zoning, existing_conditions, lot_area)
         
         # Bottom line assessment
         bottom_line = self._generate_bottom_line(base_zoning, existing_conditions, scenarios)
@@ -735,15 +740,94 @@ class DevelopmentAnalyzer:
         
         return scenarios
     
+    def _consolidate_scenarios(self, scenarios: List[DevelopmentScenario]) -> List[DevelopmentScenario]:
+        """Consolidate scenarios with same unit count, keeping only the simplest path"""
+        # Group scenarios by rounded unit count
+        unit_groups = {}
+        for scenario in scenarios:
+            units_key = round(scenario.total_units)
+            if units_key not in unit_groups:
+                unit_groups[units_key] = []
+            unit_groups[units_key].append(scenario)
+        
+        # For each unit count, pick the simplest scenario
+        consolidated = []
+        for units_key, group in unit_groups.items():
+            if len(group) == 1:
+                consolidated.append(group[0])
+            else:
+                # Score each scenario by simplicity (lower = simpler)
+                for scenario in group:
+                    simplicity_score = 0
+                    
+                    # Affordability requirement penalty
+                    if "None" not in scenario.affordability_required:
+                        if "100%" in scenario.affordability_required:
+                            simplicity_score += 10  # High penalty for 100% affordable
+                        else:
+                            simplicity_score += 5   # Medium penalty for partial affordable
+                    
+                    # Approval path penalty
+                    if "Ministerial" in scenario.approval_path:
+                        simplicity_score += 0   # Best (simplest)
+                    elif "Administrative" in scenario.approval_path:
+                        simplicity_score += 2   # Medium
+                    else:
+                        simplicity_score += 5   # Worst (most complex)
+                    
+                    # Feasibility penalty
+                    if "High" in scenario.feasibility:
+                        simplicity_score += 0
+                    elif "Medium" in scenario.feasibility:
+                        simplicity_score += 3
+                    else:
+                        simplicity_score += 8
+                    
+                    scenario.simplicity_score = simplicity_score
+                
+                # Pick the scenario with lowest simplicity score (simplest)
+                simplest = min(group, key=lambda s: s.simplicity_score)
+                simplest.recommendation_reason = f"Simplest path to achieve {units_key} units"
+                consolidated.append(simplest)
+                
+        
+        return consolidated
+
     def _score_scenarios(self, scenarios: List[DevelopmentScenario], base: BaseZoning, 
                         existing: ExistingConditions, lot_area: float) -> List[DevelopmentScenario]:
-        """Score scenarios for Netflix-style recommendations"""
+        """Score scenarios prioritizing simplicity and ease of development"""
         
         for scenario in scenarios:
             score = 0.0
             reasons = []
             
-            # Base scoring: Feasibility (3 = High, 2 = Medium, 1 = Low)
+            # Primary scoring: Ease/Simplicity (40% of total score)
+            simplicity_score = getattr(scenario, 'simplicity_score', 0)
+            if simplicity_score <= 2:
+                score += 4.0
+                reasons.append("very easy to build")
+            elif simplicity_score <= 5:
+                score += 3.0
+                reasons.append("easy to build")
+            elif simplicity_score <= 8:
+                score += 2.0
+                reasons.append("moderate complexity")
+            else:
+                score += 1.0
+                reasons.append("complex process")
+            
+            # Unit yield scoring (30% of total score)
+            if base.baseline_units > 0:
+                unit_multiplier = scenario.total_units / base.baseline_units
+                score += min(unit_multiplier * 1.5, 3.0)  # Cap at 3 points for unit yield
+                if unit_multiplier >= 2.0:
+                    reasons.append("excellent unit yield")
+                elif unit_multiplier >= 1.5:
+                    reasons.append("good unit yield")
+                elif unit_multiplier >= 1.2:
+                    reasons.append("modest unit yield")
+            
+            # Feasibility scoring (30% of total score)
             if "High" in scenario.feasibility:
                 score += 3.0
                 reasons.append("high feasibility")
@@ -753,30 +837,6 @@ class DevelopmentAnalyzer:
             else:
                 score += 1.0
                 reasons.append("challenging feasibility")
-            
-            # Unit yield scoring (normalized by baseline)
-            if base.baseline_units > 0:
-                unit_multiplier = scenario.total_units / base.baseline_units
-                score += min(unit_multiplier * 2, 6.0)  # Cap at 6 points for unit yield
-                if unit_multiplier >= 2.0:
-                    reasons.append("excellent unit yield")
-                elif unit_multiplier >= 1.5:
-                    reasons.append("good unit yield")
-                elif unit_multiplier >= 1.2:
-                    reasons.append("modest unit yield")
-            
-            # No affordability requirement bonus
-            if "None" in scenario.affordability_required:
-                score += 2.0
-                reasons.append("no affordability requirement")
-            
-            # Speed bonus (ministerial approval)
-            if "Ministerial" in scenario.approval_path:
-                score += 1.5
-                reasons.append("fast approval")
-            elif "Administrative" in scenario.approval_path:
-                score += 1.0
-                reasons.append("streamlined approval")
             
             # Special bonuses based on property characteristics
             if lot_area < 3000:  # Small lot
